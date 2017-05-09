@@ -75,8 +75,8 @@ def compare_L1_SVM_CP_path(type_Sigma, N_list, P, k0, rho, tau_SNR):
 			aux_alpha = -1
 
 
-			index_SVM_CP_delete    = init_CP_norm_samples(X_train, y_train, n_samples, f) #just for highest alpha
-			index_SVM_CP_no_delete = init_CP_norm_samples(X_train, y_train, n_samples, f)
+			index_SVM_CP_delete, _    = init_CP_norm_samples(X_train, y_train, n_samples, f) #just for highest alpha
+			index_SVM_CP_no_delete, _ = init_CP_norm_samples(X_train, y_train, n_samples, f)
 
 
 			model_L1_SVM           = 0
@@ -91,21 +91,21 @@ def compare_L1_SVM_CP_path(type_Sigma, N_list, P, k0, rho, tau_SNR):
 			#---L1 SVM 
 				write_and_print('\n###### L1 SVM without CP #####', f)
 				index_CP = init_CP_dual(X_train, y_train, alpha, n_samples, f)
-				beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _ = L1_SVM_CP(X_train, y_train, range(N), alpha, epsilon_RC, time_limit, model_L1_SVM, False, f)
+				beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _, _ = L1_SVM_CP(X_train, y_train, range(N), alpha, epsilon_RC, time_limit, model_L1_SVM, False, f)
 				times_L1_SVM[aux_N][aux_alpha].append(time_L1_SVM)
 
 
 
 			#---L1 SVM with cutting planes and deleting
 				write_and_print('\n###### L1 SVM with CP and deletion #####', f)
-				beta_SVM_CP, support_SVM_CP, time_SVM_CP, model_SVM_CP_delete, index_SVM_CP_delete = L1_SVM_CP(X_train, y_train, index_SVM_CP_delete, alpha, epsilon_RC, time_limit, model_SVM_CP_delete, True, f)
+				beta_SVM_CP, support_SVM_CP, time_SVM_CP, model_SVM_CP_delete, index_SVM_CP_delete, _ = L1_SVM_CP(X_train, y_train, index_SVM_CP_delete, alpha, epsilon_RC, time_limit, model_SVM_CP_delete, True, f)
 				times_SVM_CP_delete[aux_N][aux_alpha].append(time_SVM_CP)
 				print len(index_SVM_CP_delete)
 
 
 			#---L1 SVM with cutting planes and non deleting
 				write_and_print('\n###### L1 SVM with CP and no deletion #####', f)
-				beta_SVM_CP, support_SVM_CP, time_SVM_CP, model_SVM_CP_no_delete, index_SVM_CP_no_delete = L1_SVM_CP(X_train, y_train, index_SVM_CP_no_delete, alpha, epsilon_RC, time_limit, model_SVM_CP_no_delete, False, f)
+				beta_SVM_CP, support_SVM_CP, time_SVM_CP, model_SVM_CP_no_delete, index_SVM_CP_no_delete, _ = L1_SVM_CP(X_train, y_train, index_SVM_CP_no_delete, alpha, epsilon_RC, time_limit, model_SVM_CP_no_delete, False, f)
 				times_SVM_CP_no_delete[aux_N][aux_alpha].append(time_SVM_CP)
 				print len(index_SVM_CP_no_delete)
 

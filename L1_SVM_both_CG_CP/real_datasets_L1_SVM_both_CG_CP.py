@@ -37,8 +37,11 @@ def real_datasets_L1_SVM_both_CG_CP(type_real_dataset):
 
 
 	epsilon_RC  = 1e-2
-	alpha       = 1e-1
-	time_limit  = 300  
+	time_limit  = 300 
+
+#---Define the path
+	alpha_max    = np.max(np.sum( np.abs(X_train), axis=0))                 #infinite norm of the sum over the lines
+	alpha_list   = [1e-2*alpha_max*0.7] #start with non empty support 
 
 
 
@@ -49,8 +52,8 @@ def real_datasets_L1_SVM_both_CG_CP(type_real_dataset):
 
 
 #---R L1 SVM 
-	write_and_print('\n###### L1 SVM with R: penalizedSVM #####', f)
-	beta_R_L1_SVM, support_R_L1_SVM, time_R_L1_SVM = penalizedSVM_R_L1_SVM(X_train, y_train, alpha, f)
+	#write_and_print('\n###### L1 SVM with R: penalizedSVM #####', f)
+	#beta_R_L1_SVM, support_R_L1_SVM, time_R_L1_SVM = penalizedSVM_R_L1_SVM(X_train, y_train, alpha, f)
 
 
 #---R L1 SVM 

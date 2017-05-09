@@ -104,20 +104,57 @@ def init_CP_random_sampling(X_train, y_train, n_samples, f):
 
 
 def init_CP_norm_samples(X_train, y_train, n_samples, f):
+    start = time.time()
 
-    sum_lines = np.abs(np.sum(X_train, axis=1))
+    #FORMULA1
+    #sum_lines = np.abs(np.sum(X_train, axis=1))
+
+    #FORMULA2
+    sum_lines = np.sum(np.abs(X_train), axis=1)
+    
     argsort_lines = np.argsort(sum_lines)
     index_CP      = argsort_lines[::-1][:n_samples].tolist()
     
-    return index_CP
+    time_l1_norm = time.time()-start
+    write_and_print('Time l1 norm:'+str(time_l1_norm), f)
+    
+    return index_CP, time_l1_norm
+
+
+
+def liblinear_for_CP(type_liblinear, X, y, alpha, f):
+
+    start = time.time()
+    N = X.shape[0]
+
+    if type_liblinear== 'hinge_l2':
+        estimator = svm.LinearSVC(penalty='l2', loss= 'hinge', dual=True, C=1/(2*float(alpha)))
+    elif type_liblinear== 'squared_hinge_l1':
+        estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(alpha))
+
+    estimator = estimator.fit(X, y)
+
+    beta_liblinear, b0 = estimator.coef_[0], estimator.intercept_[0]
+    support            = np.where(beta_liblinear !=0)[0]
+    beta_liblinear_supp= beta_liblinear[support]
+
+    constraints = np.array([1 - y[i]*( np.dot(X[i][support], beta_liblinear_supp) +b0) for i in range(N)])
+    #idx_CP      = constraints.argsort()[::-1][:n_samples] #pi>0
+
+    idx_liblinear = np.arange(N)[constraints >= 0].tolist()
+    write_and_print('Len dual liblinear: '+str(len(idx_liblinear)), f)
+
+
+    time_liblinear = time.time()-start
+    write_and_print('Time liblinear for '+type_liblinear+': '+str(time_liblinear), f)
+
+    return idx_liblinear, time_liblinear, beta_liblinear
 
 
 
 
 
-
-
-def L1_SVM_CP(X_train, y_train, index_CP, alpha, epsilon_RC, time_limit, model, delete_constraints, f):
+def L1_SVM_CP(X_train, y_train, index_CP, alpha, epsilon_RC, time_limit, model, warm_start, delete_constraints, f):
 
 
 #INPUT
@@ -133,7 +170,7 @@ def L1_SVM_CP(X_train, y_train, index_CP, alpha, epsilon_RC, time_limit, model, 
 
 #---Build the model
     start = time.time()
-    model = L1_SVM_CP_model(X_train, y_train, index_CP, alpha, time_limit, model, f) #model=0 -> no warm start
+    model = L1_SVM_CP_model(X_train, y_train, index_CP, alpha, time_limit, model, warm_start, f) #model=0 -> no warm start
     
 
 
@@ -202,7 +239,8 @@ def L1_SVM_CP(X_train, y_train, index_CP, alpha, epsilon_RC, time_limit, model, 
     b0         = model.getVarByName('b0').X
     support = np.where(beta!=0)[0]
 
-    write_and_print('\nObj value   = '+str(model.ObjVal), f)
+    obj_val = model.ObjVal
+    write_and_print('\nObj value   = '+str(obj_val), f)
     write_and_print('\nLen support       = '+str(len(support)), f)
 
     solution_dual = np.array([model.getConstrByName('slack_'+str(index)).Pi for index in index_CP])
@@ -228,7 +266,7 @@ def L1_SVM_CP(X_train, y_train, index_CP, alpha, epsilon_RC, time_limit, model, 
     time_CP = time.time()-start    
     write_and_print('Time = '+str(time_CP), f)
 
-    return beta, support, time_CP, model, index_CP, model.ObjVal
+    return beta, support, time_CP, model, index_CP, obj_val
 
 
 

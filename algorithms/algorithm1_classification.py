@@ -115,8 +115,13 @@ def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, tau
 #EPSILON : stop the convergence
 
 
-
+    
 #BETA_M : the last component is beta_0 the origin coefficient
+
+    X_add = np.ones((N,P+1))
+    X_add[:,:P] = X_train
+
+    L = np.linalg.norm(np.dot(X_add.T,X_add))
     
     NN, PP = X.shape
     
@@ -131,7 +136,8 @@ def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, tau
     
 #---MAIN LOOP   
     test =0
-    while(np.linalg.norm(beta_m-old_beta)>epsilon and test <200): 
+    while(not np.array_equal(old_support, support) and test <50):
+    #while(np.linalg.norm(beta_m-old_beta)>epsilon and test <200): 
         #print np.where(beta_m!=0), np.linalg.norm(beta_m-old_beta)
         test+=1
 

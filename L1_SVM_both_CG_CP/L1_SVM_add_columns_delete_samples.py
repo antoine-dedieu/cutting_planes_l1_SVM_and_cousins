@@ -1,8 +1,5 @@
 import numpy as np
 from gurobipy import *
-from L1_SVM_CG_model import *
-
-from scipy.stats.stats import pearsonr 
 
 import time
 sys.path.append('../synthetic_datasets')
@@ -15,7 +12,6 @@ sys.path.append('../L1_SVM_CP')
 from L1_SVM_CP_model import *
 
 
-#-----------------------------------------------INITIALIZE WITH RFE--------------------------------------------------
 
 
 
@@ -24,8 +20,14 @@ def L1_SVM_add_columns_delete_samples(X_train, y_train, index_samples, index_col
 
 
 #INPUT
-#n_features_RFE : number of features to give to RFE to intialize
-#epsilon_RC     : maximum non negatuve reduced cost
+#index_samples : index of samples currently in model
+#index_columns : index of columns currently in model
+
+
+## USED TO COMPUTE THE PATH
+# At every iteration we train the restricted model, check if
+
+
 
     N,P = X_train.shape
     aux = 0   #count he number of rounds 

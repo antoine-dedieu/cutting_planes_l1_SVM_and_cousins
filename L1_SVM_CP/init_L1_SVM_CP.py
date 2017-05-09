@@ -6,6 +6,9 @@ sys.path.append('../L1_SVM_CG')
 from L1_SVM_CG import *
 
 
+import time
+
+
 def dual_L1_SVM_CP_model(X, y, idx_CP, alpha, iteration_limit):
 
 #idx_CG    = index of the features used to generate 
@@ -101,6 +104,10 @@ def restrict_lines_CP_dual(X, y, alpha, n_samples, f):
 
 
 
+
+
+
+
 def init_CP_dual(X, y, alpha, n_samples, f):
     N, P = X.shape
 
@@ -114,6 +121,10 @@ def init_CP_dual(X, y, alpha, n_samples, f):
     idx_CP = restrict_lines_CP_dual(X_RFE, y, alpha, n_samples, f)
 
     return idx_CP
+
+
+
+
 
 
 

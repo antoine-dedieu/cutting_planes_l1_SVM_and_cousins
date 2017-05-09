@@ -62,8 +62,6 @@ def L1_SVM_CG_plots(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM, times
                 box.set_label(legend_plot[i])
                 box.set_color(colors[i])
 
-    
-
 
 #---LABELS
     ax1.set_xticks(positions)
@@ -94,7 +92,7 @@ def L1_SVM_CG_plots(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM, times
 def L1_SVM_CG_plots_path(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM_averaged, times_SVM_CG_averaged_delete, times_SVM_CG_averaged_no_delete):
 
 
-    fig = plt.figure(figsize=(30,20))
+    fig = plt.figure(figsize=(15,10))
     ax1 = fig.add_subplot(1,1,1)
 
     positions = np.arange(0.5, 0.5+len(P_list), 1)
@@ -108,7 +106,8 @@ def L1_SVM_CG_plots_path(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM_a
 
  #--COLORS IN THE BOXES
     colors = {0:'b', 1:'r', 2:'g'}
-    legend_plot = {0:'Gurobi', 1:'CG with deletion', 2:'CG without deletion'}
+    #legend_plot = {0:'No CG', 1:'CG with correlation, Eps=1e-2', 2:'Liblinear eps = 1e-2'}
+    legend_plot = {0:'No CG', 1:'CG with correlation, Eps=1e-1', 2:'CG with correlation, Eps=1e-2'}
     
     for i in range(3):
         bp = bps[i]
@@ -144,7 +143,6 @@ def L1_SVM_CG_plots_path(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM_a
 
     
 
-
 #---LABELS
     ax1.set_xticks(positions)
     ax1.set_xticklabels((str(P) for P in P_list))
@@ -165,12 +163,6 @@ def L1_SVM_CG_plots_path(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM_a
         label.set_fontsize('x-large')
 
 
-
-
-
-
-
-
 def compare_ratios(type_Sigma, N, P_list, k0, rho, tau_SNR, compare_ratio, alpha_list):
    
 
@@ -183,7 +175,6 @@ def compare_ratios(type_Sigma, N, P_list, k0, rho, tau_SNR, compare_ratio, alpha
 
 
     
-
 #---LABELS
     ax1.set_xticks(range(len(alpha_list)))
     ax1.set_xticklabels((str(alpha) for alpha in alpha_list))
@@ -203,6 +194,68 @@ def compare_ratios(type_Sigma, N, P_list, k0, rho, tau_SNR, compare_ratio, alpha
 
 
     ax1.set_xlim(left=0)
+
+
+
+
+
+def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, legend_plot, time_or_objval):
+
+
+    fig = plt.figure(figsize=(15,5))
+    ax1 = fig.add_subplot(1,1,1)
+
+    positions = np.arange(0.5, 0.5+len(arg_list), 1)
+    
+
+    n_to_plot   = len(times_list)
+    loop_repeat = len(times_list[0])
+
+
+
+#--arguments
+    colors     = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'r'}
+    markers    = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
+    linestyles = {0:'-.', 1:'-', 2:'--', 3:':', 4:'-.'}
+
+    for i in range(n_to_plot):
+        mean_method = np.mean(times_list[i], axis=1)
+        std_method  = np.std(times_list[i], axis=1)
+
+        ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i])
+        #ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i])
+
+    
+
+#---LABELS
+    ax1.set_xticks(positions)
+    ax1.set_xticklabels((str(arg) for arg in arg_list))
+
+    
+    for ticks in [ax1.xaxis.get_major_ticks(), ax1.yaxis.get_major_ticks()]:
+        for tick in ticks:
+            tick.label.set_fontsize(14) 
+            
+    #ax1.set_title('Sigma='+str(type_Sigma)+'; N='+str(N)+'; SNR='+str(tau_SNR)+'; Rho='+str(rho)+'\n', fontsize=20,loc='center')
+    ax1.set_xlabel('Number of features', fontsize=18)
+
+    if time_or_objval == 'time':
+        ax1.set_ylabel('Time (s)', fontsize=18)
+    elif time_or_objval == 'objval':
+        ax1.set_ylabel('Objective values ratio ', fontsize=18)
+
+    ax1.set_xlim(left=0)
+    
+
+    legend = ax1.legend(loc=2)
+    for label in legend.get_texts():
+        label.set_fontsize('x-large')
+
+
+
+
+
+
 
 
 

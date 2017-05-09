@@ -71,7 +71,6 @@ def process_data_real_datasets(type_real_dataset):
 
 
 
-
 def real_dataset_read_data(type_real_dataset, f):
 
     current_path = os.path.dirname(os.path.realpath(__file__))
@@ -118,8 +117,76 @@ def real_dataset_read_data(type_real_dataset, f):
 
 
 
-#process_data_real_datasets(1)
-#process_data_real_datasets(2)
+
+
+def real_dataset_SVM_light_format(type_real_dataset):
+
+    current_path = os.path.dirname(os.path.realpath(__file__))
+
+    dict_title = {1:'lungCancer', 2:'leukemia'}
+    size = 0
+
+    X_train = np.loadtxt(current_path+'/datasets_processed/'+str(dict_title[type_real_dataset])+'/X_train_'+str(size)+'.txt')
+    X_test  = np.loadtxt(current_path+'/datasets_processed/'+str(dict_title[type_real_dataset])+'/X_test_'+str(size)+'.txt')
+
+    y_train = np.loadtxt(current_path+'/datasets_processed/'+str(dict_title[type_real_dataset])+'/y_train_'+str(size)+'.txt')
+    y_test  = np.loadtxt(current_path+'/datasets_processed/'+str(dict_title[type_real_dataset])+'/y_test_'+str(size)+'.txt')
+
+
+    print 'Train size : '+str(X_train.shape)
+    print 'Test size : '+str(X_test.shape)
+
+
+
+#------------SNR, EPSILON and Y------------- 
+
+    N_train,P = X_train.shape
+    N_test, P = X_test.shape
+    
+
+#------------NORMALIZE------------- 
+    
+#---Normalize all the X columns
+    #l2_y_train = np.linalg.norm(y_train)
+    #y_train = y_train/float(l2_y_train)
+
+    l2_X_train   = []
+
+    for i in range(P):
+        l2 = np.linalg.norm(X_train[:,i])
+        l2_X_train.append(l2)        
+        X_train[:,i] = X_train[:,i]/float(l2)
+
+
+
+
+#---------STORE INTO GOOD FORMAT------------- 
+
+    data_train = open(current_path+'/../../struct_svm_admm/data/'+str(dict_title[type_real_dataset])+'/data_train', 'w')
+    data_test  = open(current_path+'/../../struct_svm_admm/data/'+str(dict_title[type_real_dataset])+'/data_test', 'w')
+
+    for i in range(N_train):
+        line  = str(int(1.5+0.5*y_train[i]))+' '
+        for j in range(P):
+            line += str(j+1)+':'+str(X_train[i,j])+' '
+        line += '\n'
+        data_train.write(line)
+
+
+    for i in range(N_test):
+        line  = str(int(1.5+0.5*y_test[i]))+' '
+        for j in range(P):
+            line += str(j+1)+':'+str(X_test[i,j])+' '
+        line += '\n'
+        data_test.write(line)
+
+
+
+
+
+
+#real_dataset_SVM_light_format(1)
+#real_dataset_SVM_light_format(2)
 
 
 

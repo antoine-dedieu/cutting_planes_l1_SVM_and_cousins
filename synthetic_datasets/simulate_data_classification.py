@@ -58,9 +58,11 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
         u_positive[index] = tau_SNR*np.ones(k0)
 
     elif(type_Sigma==2):
-        index = random.sample(xrange(P),k0)
-        index = [(2*i+1)*P/(2*k0) for i in range(k0)]
-        u_positive[:k0] = np.cumsum((tau_SNR/k0)*np.ones(k0))
+        #index = random.sample(xrange(P),k0)
+        #index = [(2*i+1)*P/(2*k0) for i in range(k0)]
+        #u_positive[:k0] = np.cumsum((tau_SNR/k0)*np.ones(k0))
+        u_positive[:k0] = np.ones(k0)
+
 
     elif(type_Sigma==3 or type_Sigma==5):
         u_positive[:k0] = np.ones(k0)
@@ -83,9 +85,7 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
             for j in range(P):
                 Sigma[i,j]=rho**(abs(i-j))
 
-    elif(type_Sigma==2 or type_Sigma==5):
-        Sigma = rho*np.ones(shape=(P,P)) + (1-rho)*np.identity(P)
-
+## DO NOT NEED IFTYPE = 2, 5
 
 
 
@@ -139,22 +139,26 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
 #---CASE 2: RHO and SGN(X MU + EPSILON)
     if(type_Sigma==2):
 
+        X_plus  = np.zeros((N/2, P))
+        X_minus = np.zeros((N/2, P))
 
     #------------X_train-------------
-        X0_plus = np.random.normal(u_positive, 1, size=(N/2,1))
-        Xi_plus = np.random.normal(u_positive, 1, size=(N/2,P))
+        X0_plus = np.random.normal(size=(N/2,1))
+        Xi_plus = np.concatenate([1./float(math.sqrt(1-rho))*np.random.normal(loc=  np.ones(k0), size=(N/2,k0)), np.random.normal(size=(N/2,P-k0))], axis=1)
+        #Xi_plus = np.random.normal(u_positive, Sigma, size=(N/2,P))
         
         for i in range(N/2):
-            X_plus[i,:] = math.sqrt(rho)*X0_plus[i] + (1-rho)*Xi_plus[i,:]
+            X_plus[i,:] = math.sqrt(rho)*X0_plus[i] + math.sqrt(1-rho)*Xi_plus[i,:]
         y_plus = np.ones(N/2)
 
 
-        X0_minus = np.random.normal(u_negative, 1, size=(N/2,1))
-        Xi_minus = np.random.normal(u_negative, 1, size=(N/2,P))
+        X0_minus = np.random.normal(size=(N/2,1))
+        Xi_minus = np.concatenate([1./float(math.sqrt(1-rho))*np.random.normal(loc= -np.ones(k0), size=(N/2,k0)), np.random.normal(size=(N/2,P-k0))], axis=1)
+        #Xi_minus = np.random.normal(u_negative, 1, size=(N/2,P))
         
         for i in range(N/2):
-            X_plus[i,:] = math.sqrt(rho)*X0_minus[i] + (1-rho)*Xi_minus[i,:]
-        y_minus = np.ones(N/2)
+            X_minus[i,:] = math.sqrt(rho)*X0_minus[i] + math.sqrt(1-rho)*Xi_minus[i,:]
+        y_minus = -np.ones(N/2)
 
 
     #---Concatenate
@@ -165,20 +169,20 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
 
 
     #------------X_test-------------
-        X0_plus = np.random.normal(u_positive, 1, size=(N/2,1))
-        Xi_plus = np.random.normal(u_positive, 1, size=(N/2,P))
+        X0_plus = np.random.normal(size=(N/2,1))
+        Xi_plus = np.concatenate([1./float(math.sqrt(1-rho))*np.random.normal(loc=  np.ones(k0), size=(N/2,k0)), np.random.normal(size=(N/2,P-k0))], axis=1)
         
         for i in range(N/2):
             X_plus[i,:] = math.sqrt(rho)*X0_plus[i] + (1-rho)*Xi_plus[i,:]
         y_plus = np.ones(N/2)
 
 
-        X0_minus = np.random.normal(u_negative, 1, size=(N/2,1))
-        Xi_minus = np.random.normal(u_negative, 1, size=(N/2,P))
+        X0_minus = np.random.normal(size=(N/2,1))
+        Xi_minus = np.concatenate([1./float(math.sqrt(1-rho))*np.random.normal(loc= -np.ones(k0), size=(N/2,k0)), np.random.normal(size=(N/2,P-k0))], axis=1)
         
         for i in range(N/2):
             X_plus[i,:] = math.sqrt(rho)*X0_minus[i] + (1-rho)*Xi_minus[i,:]
-        y_minus = np.ones(N/2)
+        y_minus = -np.ones(N/2)
 
 
     #---Concatenate
@@ -288,6 +292,7 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
 
     for i in range(P):
         l2 = np.linalg.norm(X_train[:,i])
+        #l2 = np.std(X_train[:,i])
         l2_X_train.append(l2)        
         X_train[:,i] = X_train[:,i]/float(l2)
 

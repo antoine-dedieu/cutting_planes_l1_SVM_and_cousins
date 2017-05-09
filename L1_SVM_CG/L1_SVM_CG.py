@@ -12,9 +12,13 @@ from simulate_data_classification import *
 #-----------------------------------------------INITIALIZE WITH RFE--------------------------------------------------
 
 
-def RFE_for_CG(X_train, y_train, alpha, n_features, f):
+def RFE_for_CG(type_RFE, X_train, y_train, alpha, n_features, f):
 
 #Run a two stpe RFE as suggested
+
+#INPUT
+#type_RFE = hinge_l2         -> hinge+l2 (only on dual)
+#type_RFE = squared_hinge_l1 -> squared_hinge+l2 (only on primal)
 
 #OUTPUT
 #index_CG the
@@ -23,7 +27,11 @@ def RFE_for_CG(X_train, y_train, alpha, n_features, f):
     N,P = X_train.shape
 
 #---First RFE by removing half of the features at every iteration
-    estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(2*alpha))
+    if type_RFE== 'hinge_l2':
+        estimator = svm.LinearSVC(penalty='l2', loss= 'hinge', dual=True, C=1/(2*float(alpha)))
+    elif type_RFE== 'squared_hinge_l1':
+        estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(alpha))
+
     selector = RFE(estimator, n_features_to_select=100, step=0.5)
     selector = selector.fit(X_train, y_train)
 
@@ -37,16 +45,52 @@ def RFE_for_CG(X_train, y_train, alpha, n_features, f):
 
 
 #---Second RFE removing one feature at a time
-    estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(2*alpha))
+    if type_RFE== 'hinge_l2':
+        estimator = svm.LinearSVC(penalty='l2', loss= 'hinge', dual=True, C=1/(2*float(alpha)))
+    elif type_RFE== 'squared_hinge_l1':
+        estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(alpha))
+
     selector = RFE(estimator, n_features_to_select=n_features, step=0.9)
     selector = selector.fit(X_train_reduced, y_train)
 
     support_RFE_second_step = np.where(selector.ranking_ < 2)[0].tolist()
-    index_CG = support_RFE_first_step[support_RFE_second_step]
+    index_RFE = support_RFE_first_step[support_RFE_second_step]
 
-    write_and_print('Time RFE for column subset selection: '+str(time.time()-start), f)
+    time_RFE = time.time()-start
 
-    return index_CG
+    write_and_print('Time RFE for column subset selection: '+str(time_RFE), f)
+
+    return index_RFE.tolist(), time_RFE
+
+
+
+
+def liblinear_for_CG(type_liblinear, X, y, alpha, f):
+
+    start = time.time()
+    N = X.shape[0]
+
+    if type_liblinear== 'hinge_l2':
+        estimator = svm.LinearSVC(penalty='l2', loss= 'hinge', dual=True, C=1/(2*float(alpha)))
+    elif type_liblinear== 'squared_hinge_l1':
+        estimator = svm.LinearSVC(penalty='l1', loss= 'squared_hinge', dual=False, C=1/float(alpha))
+
+    estimator = estimator.fit(X, y)
+
+    beta_liblinear, b0 = estimator.coef_[0], estimator.intercept_
+    support            = np.where(beta_liblinear !=0)[0].tolist()
+    beta_liblinear     = beta_liblinear[support]
+
+
+    write_and_print('Len support liblinear: '+str(len(support)), f)
+
+    time_liblinear = time.time()-start
+    write_and_print('Time liblinear for '+type_liblinear+': '+str(time_liblinear), f)
+
+    return [beta_liblinear, b0], support, time_liblinear
+
+
+
 
 
 
@@ -62,36 +106,40 @@ def init_correlation(X_train, y_train, n_features, f):
 
 #---First RFE by removing half of the features at every iteration
     if(n_features<=P):
-        correlations    = np.dot(X_train.T, y_train)/np.linalg.norm(y_train) #class are balanced so we always can compute this way
+        correlations    = np.dot(X_train.T, y_train)       #class are balanced so we always can compute this way
         argsort_columns = np.argsort(np.abs(correlations))
         index_CG        = argsort_columns[::-1][:n_features]
 
-
-    write_and_print('Time correlation for column subset selection: '+str(time.time()-start), f)
-    return index_CG.tolist()
-
-
+    time_correl = time.time()-start
+    write_and_print('Time correlation for column subset selection: '+str(time_correl), f)
+    return index_CG.tolist(), time_correl
 
 
 
 
-def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, delete_columns, f):
+
+
+def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, warm_start, delete_columns, f):
 
 
 #INPUT
 #n_features_RFE : number of features to give to RFE to intialize
 #epsilon_RC     : maximum non negatuve reduced cost
 #delete_columns : boolean indicating whether we have to delete the columns not in the support
-
+    
+    start = time.time()
+    
     N,P = X_train.shape
     aux = 0   #count he number of rounds 
     #index_CG = index_CG.tolist()
 
 
 #---Build the model
-    start = time.time()
-    model = L1_SVM_CG_model(X_train, y_train, index_CG, alpha, time_limit, model, f) #model=0 -> no warm start else update the objective function
-    is_L1_SVM = (len(index_CG) == N)
+    model     = L1_SVM_CG_model(X_train, y_train, index_CG, alpha, time_limit, model, warm_start, f) #model=0 -> no warm start else update the objective function
+    is_L1_SVM = (len(index_CG) == P)
+
+    columns_to_check = list(set(range(P))-set(index_CG))
+    ones_P = np.ones(P)
     
 
 #---Infinite loop until all the variables have non reduced cost
@@ -103,35 +151,34 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
         model.optimize()
         write_and_print('Time optimizing = '+str(time.time()-start), f)
 
-    #---Compute all reduce cost and look for variable with negative reduced costs
-        dual_slack       = [model.getConstrByName('slack_'+str(i)).Pi for i in range(N)]
-        violated_columns = []
-        
-        
-    #---THE FOLLOWING DOESNT HAPPEN FOR L1 SVM
-        for column in set(range(P))-set(index_CG):
-            reduced_cost = np.sum([y_train[i]*X_train[i,column]*dual_slack[i] for i in range(N)])
-            reduced_cost = alpha  + min(reduced_cost, -reduced_cost)
+        if not is_L1_SVM:
 
-            if reduced_cost < -epsilon_RC:
-                violated_columns.append(column)
-                
-        
-        
-    #---Add the column with negative reduced costs
-        n_columns_to_add = len(violated_columns)
+        #---Compute all reduce cost and look for variable with negative reduced costs
+            dual_slacks      = [model.getConstrByName('slack_'+str(i)) for i in range(N)]
+            dual_slack_values= [dual_slack.Pi for dual_slack in dual_slacks]
+            
+            RC_aux           = np.array([y_train[i]*dual_slack_values[i] for i in range(N)])
+            RC_array         = alpha*ones_P[len(columns_to_check)] - np.abs( np.dot(X_train[:, np.array(columns_to_check)].T, RC_aux) )
 
-        if n_columns_to_add>0:
-            write_and_print('Number of columns added: '+str(n_columns_to_add), f)
+            violated_columns = np.array(columns_to_check)[RC_array < -epsilon_RC]
+                       
+            
+        #---Add the column with negative reduced costs
+            n_columns_to_add = violated_columns.shape[0]
 
-            for i in range(n_columns_to_add):
-                column_to_add = violated_columns[i]
-                model = add_column_L1_SVM(X_train, y_train, model, column_to_add, range(N), alpha) 
-                model.update()
+            if n_columns_to_add>0:
+                write_and_print('Number of columns added: '+str(n_columns_to_add), f)
+                model = add_columns_L1_SVM(X_train, y_train, model, violated_columns, range(N), dual_slacks, alpha) 
 
-                index_CG.append(column_to_add)
+                for i in range(n_columns_to_add):
+                    column_to_add = violated_columns[i]
+                    index_CG.append(column_to_add)
+                    columns_to_check.remove(column_to_add)
 
-        
+            else:
+                break
+
+            
     #---WE ALWAYS BREAK FOR L1 SVM   
         else:
             break 
@@ -139,17 +186,32 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
 
 
 #---Solution
-    beta_plus  = np.zeros(P)
-    beta_minus = np.zeros(P)
-
-    for i in index_CG:
-        beta_plus[i]  = model.getVarByName('beta_+_'+str(i)).X 
-        beta_minus[i] = model.getVarByName('beta_-_'+str(i)).X 
-
+    beta_plus   = np.array([model.getVarByName('beta_+_'+str(idx)).X  for idx in index_CG])
+    beta_minus  = np.array([model.getVarByName('beta_-_'+str(idx)).X  for idx in index_CG])
     beta    = np.round(np.array(beta_plus) - np.array(beta_minus),6)
+
+    obj_val = model.ObjVal
+
+
+#---TIME STOPS HERE
+    time_CG = time.time()-start 
+    write_and_print('\nTIME CG = '+str(time_CG), f)   
+    
+
+
+#---support and Objective value
     support = np.where(beta!=0)[0]
-    write_and_print('\nObj value   = '+str(model.ObjVal), f)
-    write_and_print('\nLen support = '+str(len(support)), f)
+    write_and_print('\nObj value   = '+str(obj_val), f)
+    write_and_print('Len support = '+str(len(support)), f)
+
+    b0   = model.getVarByName('b0').X 
+    write_and_print('b0   = '+str(b0), f)
+
+
+#---Violated constraints and dual support
+    constraints = np.ones(N) - y_train*( np.dot(X_train[:, np.array(index_CG)], beta) + b0*np.ones(N))
+    violated_constraints = np.arange(N)[constraints >= 0]
+    write_and_print('\nNumber violated constraints =  '+str(violated_constraints.shape[0]), f)
 
 
     solution_dual = np.array([model.getConstrByName('slack_'+str(index)).Pi for index in range(N)])
@@ -158,30 +220,20 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
 
 
 #---IF DELETE APPROACH, then remove non basic features
-    
-    if delete_columns and not is_L1_SVM: #CANNOT HAPPEN FOR L1 SVM
+    #if delete_columns and not is_L1_SVM: #CANNOT HAPPEN FOR L1 SVM
+    #    idx_to_removes = list(set(index_CG) - set(support))
 
-        idx_to_removes = list(set(index_CG) - set(support))
+    #    betas_to_remove = np.array([model.getVarByName(name="beta_+_"+str(i)) for i in idx_to_removes] + 
+    #                               [model.getVarByName(name="beta_-_"+str(i)) for i in idx_to_removes])
+    #    for idx_to_remove in idx_to_removes:
+    #        index_CG.remove(idx_to_remove)
 
-        betas_to_remove = np.array([model.getVarByName(name="beta_+_"+str(i)) for i in idx_to_removes] + 
-                                   [model.getVarByName(name="beta_-_"+str(i)) for i in idx_to_removes])
-
-        for idx_to_remove in idx_to_removes:
-            index_CG.remove(idx_to_remove)
-
-        for beta_to_remove in betas_to_remove:
-            model.remove(beta_to_remove)
-        model.update()
+    #    for beta_to_remove in betas_to_remove:
+    #        model.remove(beta_to_remove)
+    #    model.update()
 
 
-        
-    
-    time_CG = time.time()-start    
-
-
-#---End
-    write_and_print('Time = '+str(time_CG), f)
-    return beta, support, time_CG, model, index_CG, model.ObjVal
+    return [beta[support], b0], support, time_CG, model, index_CG, obj_val
 
 
 
