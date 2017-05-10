@@ -202,7 +202,7 @@ def compare_ratios(type_Sigma, N, P_list, k0, rho, tau_SNR, compare_ratio, alpha
 def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, legend_plot, time_or_objval):
 
 
-    fig = plt.figure(figsize=(15,5))
+    fig = plt.figure(figsize=(10,5))
     ax1 = fig.add_subplot(1,1,1)
 
     positions = np.arange(0.5, 0.5+len(arg_list), 1)
@@ -216,13 +216,13 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
 #--arguments
     colors     = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'r'}
     markers    = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
-    linestyles = {0:'-.', 1:'-', 2:'--', 3:':', 4:'-.'}
+    linestyles = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.'}
 
     for i in range(n_to_plot):
         mean_method = np.mean(times_list[i], axis=1)
         std_method  = np.std(times_list[i], axis=1)
 
-        ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i])
+        ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i], markersize=15)
         #ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i])
 
     
@@ -249,7 +249,7 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
 
     legend = ax1.legend(loc=2)
     for label in legend.get_texts():
-        label.set_fontsize('x-large')
+        label.set_fontsize('xx-large')
 
 
 

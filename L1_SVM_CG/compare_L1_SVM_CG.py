@@ -327,10 +327,10 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---BENCHMARK
 				write_and_print('\n\n###### Benchmark AL_CD #####', f)
-				store_AL_CD_comparison(X_train, y_train, N, P, seed_X, 1e-2*alpha_max)
+				store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, 1e-2*alpha_max)
 				print pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train'
-				subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train'])
-				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, N, P, 1e-2*alpha_max)
+				subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', '-d', '-e', '1', '-t', '1e-7', '-n', '1e-7', '-p', '1e-4', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train'])
+				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, 1e-2*alpha_max, f)
 
 
 
@@ -458,7 +458,8 @@ def store_ADMM_SVM_comparison(X_train, y_train, N, P, seed_X, alpha):
 
 
 
-def store_AL_CD_comparison(X_train, y_train, N, P, seed_X, alpha):
+def store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, alpha):
+
 
 	current_path  = os.path.dirname(os.path.realpath(__file__))
 	#current_path += '/../../LPsparse/data/synthetic_dataset/data_train_'+'N_'+str(N)+'_P_'+str(P)+'_seed_'+str(seed_X)+'/'
@@ -471,56 +472,97 @@ def store_AL_CD_comparison(X_train, y_train, N, P, seed_X, alpha):
 	beq = open(current_path+'/beq', 'w')
 	c   = open(current_path+'/c',   'w')
 
+
+	for j in range(P):    
+		X_train[:,j] *= l2_X_train[j]
+
 #-------A
-	A.write(str(N)+' '+str(P+1)+' '+str(0)+'\n')
+	A.write(str(N)+' '+str(N + 2*P + 2)+' '+str(0)+'\n')
 
 	for i in range(N):
-		vect = np.concatenate([-np.ones(N), -y_train[i]*X_train[i,:], np.array([y_train[i]]) ], axis=0)
-		for j in range(P):
+		vect = np.concatenate([-np.ones(N), -y_train[i]*X_train[i,:], y_train[i]*X_train[i,:], -np.array([y_train[i]]), np.array([y_train[i]]) ], axis=0)
+		for j in range(N + 2*P + 2):
 		    A.write(str(i+1)+' '+str(j+1)+' '+str(vect[j])+'\n')
 
-	Aeq.write(str(0)+' '+str(P+1)+' '+str(0)+'\n')
+	Aeq.write(str(0)+' '+str(N + 2*P + 2)+' '+str(0)+'\n')
+	print vect
 
 
 #-------b
 	for i in range(N):
-		b.write('-1\n')
+		b.write(str(-1.0)+'\n')
 
 #-------c
 	for i in range(N):
-		c.write('1\n')
-	for i in range(P):
+		c.write(str(1.0)+'\n')
+	for i in range(2*P):
 		c.write(str(alpha)+'\n')
-	c.write(str(0))
+	for i in range(2):
+		c.write(str(0.0)+'\n')
 
 
 #---META
 	meta = open(current_path+'/meta', 'w')
-	meta.write('nb '+str(P+1)+'\nnf 0 \nmI '+str(N)+'\nmE 0')
+	meta.write('nb '+str(N + 2*P + 2)+'\nnf 0 \nmI '+str(N)+'\nmE 0')
 
 
 
 
 
-def check_AL_CD_comparison(X_train, y_train, N, P, alpha):
+def check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, alpha, f):
 	current_path = os.path.dirname(os.path.realpath(__file__))
 	sol  = open(current_path+'/sol', 'r')
-	#time = open(current_path+'/time', 'r')
+	time = open(current_path+'/time', 'r')
 
-	supp_AL_CD = []
-	beta_AL_CD = []
+	for t in time:
+		time = float(t)
 
-	b0_AL_CD   = 0
+
+	for j in range(P):    
+		X_train[:,j] *= l2_X_train[j]
+
+
+	supp_AL_CD       = []
+	beta_AL_CD_plus  = np.zeros(P)
+	beta_AL_CD_minus = np.zeros(P)
+
+	xi = np.zeros(N)
+
+	b0_AL_CD_plus   = 0
+	b0_AL_CD_minus  = 0
+
 
 	for line in sol:
 		line = line.split("\t")
-		if int(line[0]) < P+1:
-			supp_AL_CD.append(int(line[0])-1)
-			beta_AL_CD.append(float(line[1].split("\n")[0] ))
+		idx  = int(line[0])
+
+		#supp_AL_CD.append(idx-1)
+		if idx < N+1:
+			xi[idx-1] = float(line[1].split("\n")[0] )
+		elif idx < N+P+1:
+			beta_AL_CD_plus[idx-N-1]  = float(line[1].split("\n")[0] )
+			#beta_AL_CD_plus.append(float(line[1].split("\n")[0] ))
+		elif idx < N+2*P+1:
+			beta_AL_CD_minus[idx-N-P-1] = float(line[1].split("\n")[0] )
+			#beta_AL_CD_minus.append(float(line[1].split("\n")[0] ))
+		elif idx == N+2*P+1:
+			b0_AL_CD_plus = float(line[1].split("\n")[0] )
+		elif idx == N+2*P+1:
+			b0_AL_CD_minus = float(line[1].split("\n")[0] )
 
 
-	constraints = np.ones(N) - y_train*( np.dot(X_train[:, supp_AL_CD], beta_AL_CD) + b0_AL_CD*np.ones(N))
+	beta_AL_CD = (beta_AL_CD_plus - beta_AL_CD_minus)*l2_X_train
+	b0_AL_CD   = b0_AL_CD_plus   - b0_AL_CD_minus
+
+	#constraints = np.ones(N) - y_train*( np.dot(X_train[:, supp_AL_CD], beta_AL_CD) + b0_AL_CD*np.ones(N))
+	constraints = np.ones(N) - y_train*( np.dot(X_train, beta_AL_CD) + b0_AL_CD*np.ones(N))
 	obj_val     = np.sum([max(constraints[i], 0) for i in range(N)]) + alpha*np.sum(np.abs(beta_AL_CD))
+
+	write_and_print('\n\nTIME AL_CD   = '+str(time), f)   
+	write_and_print('OBJ VAL AL_CD = '+str(obj_val), f)   
+
+	obj_val_bis  = np.sum(xi) + alpha*np.sum(np.abs(beta_AL_CD))
+	write_and_print('OBJ VAL BIS AL_CD = '+str(obj_val_bis), f)   
 
 	return obj_val, time
 
