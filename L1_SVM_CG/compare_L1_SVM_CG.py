@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import math
+import subprocess
 
 
 from gurobipy import *
@@ -44,7 +45,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 #---PARAMETERS
 	epsilon_RC  = 1e-2
-	loop_repeat = 3
+	loop_repeat = 1
 	
 	n_alpha_list = 1
 	time_limit   = 30  
@@ -87,7 +88,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 			alpha_list   = [1e-2*alpha_max]
 
 
-		#---STORE FOR COMAPRISONS
+		#---STORE FOR COMPARISONS
 			store_ADMM_SVM_comparison(X_train, y_train, N, P, seed_X, 1e-2*alpha_max)
 
 
@@ -102,7 +103,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 			scaling = (200./N)**2
 
 			argsort_columns = np.argsort(np.abs(np.dot(X_train.T, y_train) ))
-			index_CG        = argsort_columns[::-1][:1000]
+			index_CG        = argsort_columns[::-1][:5*N]
 			X_train_reduced = np.array([X_train[:,j] for j in index_CG]).T
 
 			tau_max = 0.1
@@ -145,7 +146,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 		#---METHOD 3
 			argsort_columns = np.argsort(np.abs(np.dot(X_train.T, y_train) ))
-			index_CG        = argsort_columns[::-1][:2000]
+			index_CG        = argsort_columns[::-1][:10*N]
 			X_train_reduced = np.array([X_train[:,j] for j in index_CG]).T
 
 			tau_max = 1*scaling
@@ -205,7 +206,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---L1 SVM 
 				write_and_print('\n###### L1 SVM with Gurobi without CG without warm start #####', f)
-				if P<20000:
+				if P<200:
 					beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, model_L1_SVM, [], False, f) #_ = range(P) 
 				else:
 					#beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, model_L1_SVM, [], False, f) #_ = range(P) 
@@ -213,7 +214,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 					time_L1_SVM = 1
 					obj_val_L1_SVM = 1
 					
-				times_L1_SVM[aux_P][aux_alpha].append(time_L1_SVM)
+				#times_L1_SVM[aux_P][aux_alpha].append(time_L1_SVM)
 
 
 			#---Compute path
@@ -230,10 +231,31 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 				beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 5e-2, time_limit, model_method_1, beta_method_1, False, f)
 				time_method_1_tot += time_method_1
 
-				times_SVM_CG_method_1[aux_P][aux_alpha].append(time_method_1_tot)
+				times_L1_SVM[aux_P][aux_alpha].append(time_method_1_tot)
 				objvals_SVM_method_1[aux_P][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM))
 
 				write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)   
+
+
+			#---Compute path
+				write_and_print('\n###### L1 SVM path with CG correl 0.001 P #####', f)
+				alpha_bis = alpha_max
+				index_columns_method_1, _   = init_correlation(X_train, y_train, int(0.001*P), f)
+				beta_method_1     = []
+				time_method_1_tot = 0
+				model_method_1    = 0
+
+				while 0.7*alpha_bis > alpha_list[0]:
+					beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_bis, 5e-2, time_limit, model_method_1, beta_method_1, False, f)
+					alpha_bis   *= 0.7
+					time_method_1_tot += time_method_1
+				beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 5e-2, time_limit, model_method_1, beta_method_1, False, f)
+				time_method_1_tot += time_method_1
+
+				times_SVM_CG_method_1[aux_P][aux_alpha].append(time_method_1_tot)
+				objvals_SVM_method_1[aux_P][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM))
+
+				write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)
 
 
 
@@ -271,27 +293,26 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---L1 SVM with CG and not deleting
 				#write_and_print('\n###### L1 SVM with CG restricted, eps=5e-2 #####', f)
-				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 1k, tau='+str(0.5*scaling)+', T_max = 50 #####', f)
+				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 1k, tau='+str(0.5*scaling)+', T_max = 100 #####', f)
 				beta_method_2, support_method_2, time_method_2, model_method_2, index_columns_method_2, obj_val_method_2  = L1_SVM_CG(X_train, y_train, index_columns_method_2, alpha, 5e-2, time_limit, model_method_2, [], False, f)
 				times_SVM_CG_method_2[aux_P][aux_alpha].append(time_correl + time_smoothing_2 + time_method_2)
 				objvals_SVM_method_2[aux_P][aux_alpha].append(obj_val_method_2/float(obj_val_L1_SVM))
 
 
 			#---L1 SVM with CG and not deleting
-				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 2k, tau='+str(scaling)+', T_max = 50 #####', f)
+				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 2k, tau='+str(scaling)+', T_max = 100 #####', f)
 				#write_and_print(str(sorted(index_columns_method_3)), f)
 				#beta_method_3, support_method_3, time_method_3, model_method_3, index_columns_method_3, obj_val_method_3 = L1_SVM_CG(X_train, y_train, index_columns_method_3, alpha, 5e-2, time_limit, model_method_3, [], False, f)
 				#times_SVM_CG_method_3[aux_P][aux_alpha].append(time_correl + time_smoothing_3 + time_method_3)
 				#objvals_SVM_method_3[aux_P][aux_alpha].append(obj_val_method_3/float(obj_val_L1_SVM))
 
 
-			#---L1 SVM with CG and not deleting
-				#write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 2k, tau=1, T_max = 100 #####', f)
+			#---L1 SVM with correlation
 				write_and_print('\n\n###### L1 SVM with CG correl 50 #####', f)
-				beta_method_4, support_method_4, time_method_4, model_method_4, index_columns_method_4, obj_val_method_4 = L1_SVM_CG(X_train, y_train, index_SVM_CG_correl, alpha, 5e-2, time_limit, model_method_4, [], False, f)
+				#beta_method_4, support_method_4, time_method_4, model_method_4, index_columns_method_4, obj_val_method_4 = L1_SVM_CG(X_train, y_train, index_SVM_CG_correl, alpha, 5e-2, time_limit, model_method_4, [], False, f)
 				
-				times_SVM_CG_method_4[aux_P][aux_alpha].append(time_correl + time_method_4)
-				objvals_SVM_method_4[aux_P][aux_alpha].append(obj_val_method_4/float(obj_val_L1_SVM))
+				#times_SVM_CG_method_4[aux_P][aux_alpha].append(time_correl + time_method_4)
+				#objvals_SVM_method_4[aux_P][aux_alpha].append(obj_val_method_4/float(obj_val_L1_SVM))
 
 
 
@@ -302,6 +323,14 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 				#times_SVM_CG_method_4[aux_P][aux_alpha].append(time_method_4)
 				#objvals_SVM_method_4[aux_P][aux_alpha].append(obj_val_method_4/float(obj_val_L1_SVM))
 
+
+
+			#---BENCHMARK
+				write_and_print('\n\n###### Benchmark AL_CD #####', f)
+				store_AL_CD_comparison(X_train, y_train, N, P, seed_X, 1e-2*alpha_max)
+				print pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train'
+				subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train'])
+				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, N, P, 1e-2*alpha_max)
 
 
 
@@ -316,29 +345,35 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 	times_method_1 = [ [ np.sum([times_SVM_CG_method_1[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 	times_method_2 = [ [ np.sum([times_SVM_CG_method_2[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 	#times_method_3 = [ [ np.sum([times_SVM_CG_method_3[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
-	times_method_4 = [ [ np.sum([times_SVM_CG_method_4[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
+	#times_method_4 = [ [ np.sum([times_SVM_CG_method_4[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 
 
 	np.save(pathname+'/../../L1_SVM_results_to_plot/times_SVM_CG_method_0', times_L1_SVM)
 	np.save(pathname+'/../../L1_SVM_results_to_plot/times_SVM_CG_method_1', times_SVM_CG_method_1)
 	np.save(pathname+'/../../L1_SVM_results_to_plot/times_SVM_CG_method_2', times_SVM_CG_method_2)
-	np.save(pathname+'/../../L1_SVM_results_to_plot/times_SVM_CG_method_3', times_SVM_CG_method_4)
+	#np.save(pathname+'/../../L1_SVM_results_to_plot/times_SVM_CG_method_3', times_SVM_CG_method_4)
 
+	legend_plot_2 = {0:'Compute path correl top 10', 1:'Compute path correl top 1e-3 P', 2:'Correl top 1k + T_max = 100'}
+	times_list    = [times_L1_SVM, times_method_1, times_method_2]
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time')
+	plt.savefig(pathname+'/compare_times_errorbar_subgroup.pdf')
+	plt.close()
 
 
 
 #---Compare objective values
-	objvals_SVM_CG_method_0    = [ [1 for loop in range(loop_repeat)] for P in range(len(P_list))]
-	objvals_SVM_CG_method_1    = [ [ np.mean([objvals_SVM_method_1[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
-	objvals_SVM_CG_method_2    = [ [ np.mean([objvals_SVM_method_2[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
+	#objvals_SVM_CG_method_0    = [ [1 for loop in range(loop_repeat)] for P in range(len(P_list))]
+	#objvals_SVM_CG_method_1    = [ [ np.mean([objvals_SVM_method_1[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
+	#objvals_SVM_CG_method_2    = [ [ np.mean([objvals_SVM_method_2[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 	#objvals_SVM_CG_method_3    = [ [ np.mean([objvals_SVM_method_3[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
-	objvals_SVM_CG_method_4    = [ [ np.mean([objvals_SVM_method_4[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
+	#objvals_SVM_CG_method_4    = [ [ np.mean([objvals_SVM_method_4[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 
 
-	np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_0', times_L1_SVM)
-	np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_1', objvals_SVM_CG_method_1)
-	np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_2', objvals_SVM_CG_method_2)
-	np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_3', objvals_SVM_CG_method_4)
+	#np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_0', times_L1_SVM)
+	#np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_1', objvals_SVM_CG_method_1)
+	#np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_2', objvals_SVM_CG_method_2)
+	#np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_3', objvals_SVM_CG_method_4)
 
 
 
@@ -370,7 +405,7 @@ def plot():
 #---MANO 
 	type_Sigma, P_list, k0, rho, tau_SNR = 2, [500, 1000, 2000, 5000, 10000], 10, 0.2, 1
 
-	times_SVM_CG_ADMM = np.array([[0.43], [1.82], [4.67], [15.07], [180]])
+	#times_SVM_CG_ADMM = np.array([[0.43], [1.82], [4.67], [15.07], [180]])
 
 
 
@@ -385,7 +420,7 @@ def plot():
 
 #---PLOT 2 Compare subgroup
 	#legend_plot_2 = {0:'Correl top 1k + (tau='+str(0.5*scaling)+', T_max = 50)', 1:'Correl top 2k + (tau='+str(scaling)+', T_max = 50)', 2:'Correl top 50'}
-	legend_plot_2 = {0:'Compute path', 1:'Correl top 1k + T_max = 50', 2:'Correl top 50'}
+	legend_plot_2 = {0:'Compute path', 1:'Correl top 1k + T_max = 100', 2:'Correl top 50'}
 	times_list  = [times_method_1, times_method_2, times_method_3]
 
 	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time')
@@ -420,6 +455,81 @@ def store_ADMM_SVM_comparison(X_train, y_train, N, P, seed_X, alpha):
 	        line += str(j+1)+':'+str(X_train[i,j])+' '
 	    line += '\n'
 	    data_train.write(line)
+
+
+
+def store_AL_CD_comparison(X_train, y_train, N, P, seed_X, alpha):
+
+	current_path  = os.path.dirname(os.path.realpath(__file__))
+	#current_path += '/../../LPsparse/data/synthetic_dataset/data_train_'+'N_'+str(N)+'_P_'+str(P)+'_seed_'+str(seed_X)+'/'
+	current_path += '/../../LPsparse/data/synthetic_dataset/data_train'
+
+
+	A   = open(current_path+'/A',   'w')
+	Aeq = open(current_path+'/Aeq', 'w')
+	b   = open(current_path+'/b',   'w')
+	beq = open(current_path+'/beq', 'w')
+	c   = open(current_path+'/c',   'w')
+
+#-------A
+	A.write(str(N)+' '+str(P+1)+' '+str(0)+'\n')
+
+	for i in range(N):
+		vect = np.concatenate([-np.ones(N), -y_train[i]*X_train[i,:], np.array([y_train[i]]) ], axis=0)
+		for j in range(P):
+		    A.write(str(i+1)+' '+str(j+1)+' '+str(vect[j])+'\n')
+
+	Aeq.write(str(0)+' '+str(P+1)+' '+str(0)+'\n')
+
+
+#-------b
+	for i in range(N):
+		b.write('-1\n')
+
+#-------c
+	for i in range(N):
+		c.write('1\n')
+	for i in range(P):
+		c.write(str(alpha)+'\n')
+	c.write(str(0))
+
+
+#---META
+	meta = open(current_path+'/meta', 'w')
+	meta.write('nb '+str(P+1)+'\nnf 0 \nmI '+str(N)+'\nmE 0')
+
+
+
+
+
+def check_AL_CD_comparison(X_train, y_train, N, P, alpha):
+	current_path = os.path.dirname(os.path.realpath(__file__))
+	sol  = open(current_path+'/sol', 'r')
+	#time = open(current_path+'/time', 'r')
+
+	supp_AL_CD = []
+	beta_AL_CD = []
+
+	b0_AL_CD   = 0
+
+	for line in sol:
+		line = line.split("\t")
+		if int(line[0]) < P+1:
+			supp_AL_CD.append(int(line[0])-1)
+			beta_AL_CD.append(float(line[1].split("\n")[0] ))
+
+
+	constraints = np.ones(N) - y_train*( np.dot(X_train[:, supp_AL_CD], beta_AL_CD) + b0_AL_CD*np.ones(N))
+	obj_val     = np.sum([max(constraints[i], 0) for i in range(N)]) + alpha*np.sum(np.abs(beta_AL_CD))
+
+	return obj_val, time
+
+
+
+
+
+
+
 
 
 #plot()
