@@ -214,15 +214,16 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
 
 
 #--arguments
-    colors     = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'r'}
-    markers    = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
-    linestyles = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.'}
+    colors      = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'m'}
+    markers     = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
+    linestyles  = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.'}
+    markersizes = {0:'15', 1:'15', 2:'10', 3:'8', 4:'15'}
 
     for i in range(n_to_plot):
         mean_method = np.mean(times_list[i], axis=1)
         std_method  = np.std(times_list[i], axis=1)
 
-        ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i], markersize=15)
+        ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i], markersize=markersizes[i])
         #ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i])
 
     

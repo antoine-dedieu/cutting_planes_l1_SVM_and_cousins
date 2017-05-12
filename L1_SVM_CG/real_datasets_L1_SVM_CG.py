@@ -51,7 +51,6 @@ def real_datasets_L1_SVM_CG(type_real_dataset):
 
 	time_limit  = 30  
 
-	store_ADMM_SVM_comparison(X_train, y_train, N, P, seed_X, 1e-2*alpha_max)
 
 
 

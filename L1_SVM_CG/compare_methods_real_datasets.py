@@ -37,55 +37,67 @@ def compare_methods_real_datasets(type_real_dataset):
 		N_test = X_test.shape[0]
 	elif type_real_dataset==3:
 		X_train, l2_X_train, y_train = read_Rahul_real_dataset(f)
-	
+
+
+#---Store for elastic net
+	store_ADMM_SVM_comparison(X_train, y_train, 'real', 'train')
+	store_ADMM_SVM_comparison(X_test,  y_test,  'real', 'test')
+
 
 	N, P = X_train.shape
-
 	epsilon_RC  = 1e-2
 
-	alpha_max    = np.max(np.sum( np.abs(X_train), axis=0))  #infinite norm of the sum over thealpha        = 1e-2*alpha_max
-
-	n_alpha_list = 15
-	alpha_list   = [alpha_max*0.7**i for i in np.arange(1, n_alpha_list+1)]
-	#alpha_list   = [1e-2*alpha_max]
-
-	time_limit  = 30  
 
 
+#---REGULARIZATION
+	alpha_max_L1    = np.max(np.sum( np.abs(X_train), axis=0))  #infinite norm of the sum over thealpha        = 1e-2*alpha_max
+	alpha_max_L2    = np.max([ np.sum([X_train[i,j]**2 for j in range(P)]) for i in range(N) ])
+
+	n_alpha_list = 60
+	alpha_list_L1   = [alpha_max_L1*0.7**i for i in np.arange(1, n_alpha_list+1)]
+	alpha_list_L2   = [alpha_max_L2*0.7**i for i in np.arange(1, n_alpha_list+1)]
 
 
 #---RESULTS
-	times_L2_SVM               = []
-	times_SVM_CG_method_1      = []  #delete the columns not in the support
-	times_SVM_CG_method_2      = []
-	times_SVM_CG_method_3      = []
-	times_SVM_CG_method_4      = []
-
-	
-
-
-
-#---MAIN LOOP
-	model_method_3   = 0	
-	n_features       = 10
-	index_method_3,_ = init_correlation(X_train, y_train, n_features, f)
-
-
+	times_L1_SVM = []
+	times_L2_SVM = []
+	times_EN_SVM = []
 
 	misclassification_L1 = []
 	misclassification_L2 = []
+	misclassification_EN = []
 
 	size_support_L1 = []
 	size_support_L2 = []
+	size_support_EN = []
 
 
+#---MAIN LOOP
+	model_method_L1   = 0	
+	n_features        = 10
+	index_method_L1,_ = init_correlation(X_train, y_train, n_features, f)
 
 	aux_alpha = -1
 
-	for alpha in alpha_list:
+	for idx in range(n_alpha_list):
 
 		aux_alpha += 1
+		alpha_L1   = alpha_list_L1[idx]
+		alpha_L2   = alpha_list_L2[idx]
+
 		write_and_print('\n------------Alpha='+str(alpha)+'-------------', f)
+
+	#---L1 SVM 
+		beta_method_L1    = np.zeros(P) if aux_alpha == 0 else []
+		write_and_print('\n###### L1 SVM with CG correlation, eps=1e-2 #####', f)
+		beta_method_L1, support_method_L1, time_method_L1, model_method_L1, index_method_L1, obj_val_method_L1  = L1_SVM_CG(X_train, y_train, index_method_L1_SVM, alpha, 1e-2, time_limit, model_method_L1, beta_method_L1, False, f)
+		
+		classifications =  np.sign(np.dot(X_test[:, support_method_L1], beta_method_L1[0]) + beta_method_L1[1]*np.ones(N_test))
+		mis_score       = np.sum(-0.5*y_test*classifications+0.5*np.ones(N_test))
+
+		size_support_L1.append(len(support_method_3))
+		misclassification_L1.append(mis_score)
+		times_L1_SVM.append(time_method_3)
 
 
 	#---L2 SVM 
@@ -101,32 +113,30 @@ def compare_methods_real_datasets(type_real_dataset):
 
 
 
-	#---L1 SVM 
-		beta_method_3    = np.zeros(P) if aux_alpha == 0 else []
-		write_and_print('\n###### L1 SVM with CG correlation, eps=1e-2 #####', f)
-		beta_method_3, support_method_3, time_method_3, model_method_3, index_method_3, obj_val_method_3  = L1_SVM_CG(X_train, y_train, index_method_3, alpha, 1e-2, time_limit, model_method_3, beta_method_3, False, f)
-		
-		classifications =  np.sign(np.dot(X_test[:, support_method_3], beta_method_3[0]) + beta_method_3[1]*np.ones(N_test))
-		mis_score       = np.sum(-0.5*y_test*classifications+0.5*np.ones(N_test))
+	#---EN SVM
+		subprocess.call([pathname+'/../../best_subset_classification/struct_svm_admm/structsvm_sdm_learn', '-c', str(1./alpha), '-w', '3', pathname+'/../../best_subset_classification/LPsparse/data/real_dataset/data_train', '_', pathname+'/../../best_subset_classification/LPsparse/data/real_dataset/data_test'])
+		accuracy_EN, time_EN = store_ADMM_SVM_comparison()
+		misclassification_EN.append(1. - accuracy_EN/100.)
+		times_EN_SVM.append(time_EN)
 
-		size_support_L1.append(len(support_method_3))
-		misclassification_L1.append(mis_score)
-		times_SVM_CG_method_3.append(time_method_3)
-			
 
 
 	best_idx_L1 = np.argmin(misclassification_L1)
 	best_idx_L2 = np.argmin(misclassification_L2)
+	best_idx_EN = np.argmin(misclassification_EN)
 
+
+	write_and_print('\nTime L1 SVM                  :'+str(np.sum(times_L1_SVM)), f)
+	write_and_print('Best misclassifcation L1 SVM :'+str(misclassification_L1[best_idx_L1]), f)
+	write_and_print('Size best support     L1 SVM :'+str(size_support_L1[best_idx_L1]), f)
 
 	write_and_print('\nTime L2 SVM                  :'+str(np.sum(times_L2_SVM)), f)
 	write_and_print('Best misclassifcation L2 SVM :'+str(misclassification_L2[best_idx_L2]), f)
 	write_and_print('Size best support     L2 SVM :'+str(size_support_L2[best_idx_L2]), f)
 
-
-	write_and_print('\nTime L1 SVM                  :'+str(np.sum(times_SVM_CG_method_3)), f)
-	write_and_print('Best misclassifcation L1 SVM :'+str(misclassification_L1[best_idx_L1]), f)
-	write_and_print('Size best support     L1 SVM :'+str(size_support_L1[best_idx_L1]), f)
+	write_and_print('\nTime EN SVM                  :'+str(np.sum(times_EN_SVM)), f)
+	write_and_print('Best misclassifcation EN SVM :'+str(misclassification_EN[best_idx_EN]), f)
+	#write_and_print('Size best support     EN SVM :'+str(size_support_[best_idx_EN]), f)
 
 
 
