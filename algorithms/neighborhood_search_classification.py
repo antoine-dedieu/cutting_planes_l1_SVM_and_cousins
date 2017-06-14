@@ -12,7 +12,6 @@ from neighborhood_search_tools import *
 
 
 
-
 def randomized_NS(number_NS, type_loss, type_penalization, X, y, original_train_errors, original_test_errors, train_errors, betas_grid, K0_list, number_decreases, alpha_list, X_add, L, epsilon, time_limit, f):    
 
 

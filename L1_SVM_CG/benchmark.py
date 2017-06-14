@@ -12,8 +12,13 @@ from simulate_data_classification import *
 
 def store_ADMM_SVM_comparison(X, y, real_synthetic, train_test):
 
+
 	current_path = os.path.dirname(os.path.realpath(__file__))
-	data_train   = open(current_path+'/../../struct_svm_admm/data/'+str(real_synthetic)+'_dataset/data_'+str(train_test))
+	data_train   = open(current_path+'/../../struct_svm_admm/data/'+str(real_synthetic)+'_dataset/data_'+str(train_test), 'w')
+	N,P = X.shape
+
+	for j in range(P):    
+		X[:,j] *= l2_X[j]
 
 	for i in range(N):
 	    line  = str(int(1.5+0.5*y[i]))+' '
@@ -23,11 +28,16 @@ def store_ADMM_SVM_comparison(X, y, real_synthetic, train_test):
 	    data_train.write(line)
 
 
-def store_ADMM_SVM_comparison():
+def check_ADMM_SVM_comparison(current_path):
 
-	current_path  = os.path.dirname(os.path.realpath(__file__))
-	time          = open(current_path+'/../../struct_svm_admm/time')
-	test_accuracy = open(current_path+'/../../struct_svm_admm/time')
+	time          = open(current_path+'/time_EN')
+	test_accuracy = open(current_path+'/accuracy_EN')
+
+	for t in time:
+		time = float(t)
+
+	for t in test_accuracy:
+		test_accuracy = float(t)
 
 	return test_accuracy, time
 
@@ -49,8 +59,6 @@ def store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, alpha, si
 	c   = open(current_path+'/c',   'w')
 
 
-	for j in range(P):    
-		X_train[:,j] *= l2_X_train[j]
 
 #-------A
 	A.write(str(N)+' '+str(N + 2*P + 2)+' '+str(0)+'\n')
@@ -97,8 +105,8 @@ def check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, alpha, current_pa
 		time = float(t)
 
 
-	for j in range(P):    
-		X_train[:,j] *= l2_X_train[j]
+	#for j in range(P):    
+	#	X_train[:,j] *= l2_X_train[j]
 
 
 	supp_AL_CD       = []
@@ -130,7 +138,7 @@ def check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, alpha, current_pa
 			b0_AL_CD_minus = float(line[1].split("\n")[0] )
 
 
-	beta_AL_CD = (beta_AL_CD_plus - beta_AL_CD_minus)*l2_X_train
+	beta_AL_CD = (beta_AL_CD_plus - beta_AL_CD_minus)#*l2_X_train
 	b0_AL_CD   = b0_AL_CD_plus   - b0_AL_CD_minus
 
 	#constraints = np.ones(N) - y_train*( np.dot(X_train[:, supp_AL_CD], beta_AL_CD) + b0_AL_CD*np.ones(N))
@@ -142,5 +150,8 @@ def check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, alpha, current_pa
 
 	obj_val_bis  = np.sum(xi) + alpha*np.sum(np.abs(beta_AL_CD))
 	write_and_print('OBJ VAL BIS AL_CD = '+str(obj_val_bis), f)   
+
+	support = np.where(beta_AL_CD!=0)[0]
+	write_and_print('Support = '+str(len(support)), f)   
 
 	return obj_val_bis, time

@@ -1,4 +1,4 @@
-import numpy as np
+    import numpy as np
 import time
 import math
 
@@ -45,7 +45,6 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
 
 
     while(np.linalg.norm(beta_m-old_beta)>1e-4 and test < n_iter): 
-    #while(not np.array_equal(old_support, support) and test <20):
         
         #print np.linalg.norm(beta_m-old_beta)
         test+=1
@@ -80,7 +79,7 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
 
         dict_thresholding = {'l1': soft_thresholding_l1,
                              'l2': soft_thresholding_l2}
-        eta_m = np.array([ dict_thresholding[type_penalization](grad[i], 2.*alpha/Lipchtiz_coeff) for i in range(P)] + [grad[P]])
+        eta_m = np.array([ dict_thresholding[type_penalization](grad[i], alpha/Lipchtiz_coeff) for i in range(P)] + [grad[P]])
         
         
 
@@ -120,7 +119,7 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
 
 #---Constraints
     #constraints = ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]) + b0*ones_N)
-    constraints = 1.25*ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]))
+    constraints = 1.1*ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]))
     idx_samples_smoothing = np.arange(N)[constraints >= 0]
     write_and_print('Len dual smoothing: '+str(idx_samples_smoothing.shape[0]), f)
     write_and_print('Convergence rate    : ' +str(round(np.linalg.norm(beta_m-old_beta), 3)), f) 
@@ -263,7 +262,6 @@ def loop_smoothing_hinge_loss_restriction(type_loss, type_penalization, X, y, al
 #POWER METHOD to compute the SVD of XTX
 
 def power_method(X, P):
-    
     highest_eigvctr     = np.random.rand(P)
     old_highest_eigvctr = -1
     

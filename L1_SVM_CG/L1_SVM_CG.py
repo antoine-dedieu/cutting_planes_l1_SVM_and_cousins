@@ -188,7 +188,7 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
 #---Solution
     beta_plus   = np.array([model.getVarByName('beta_+_'+str(idx)).X  for idx in index_CG])
     beta_minus  = np.array([model.getVarByName('beta_-_'+str(idx)).X  for idx in index_CG])
-    beta    = np.round(np.array(beta_plus) - np.array(beta_minus),6)
+    beta    = np.array(beta_plus) - np.array(beta_minus)
 
     obj_val = model.ObjVal
 
@@ -201,6 +201,9 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
 
 #---support and Objective value
     support = np.where(beta!=0)[0]
+    beta    = beta[support]
+
+    support = np.array(index_CG)[support]
     write_and_print('\nObj value   = '+str(obj_val), f)
     write_and_print('Len support = '+str(len(support)), f)
 
@@ -209,7 +212,7 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
 
 
 #---Violated constraints and dual support
-    constraints = np.ones(N) - y_train*( np.dot(X_train[:, np.array(index_CG)], beta) + b0*np.ones(N))
+    constraints = np.ones(N) - y_train*( np.dot(X_train[:, support], beta) + b0*np.ones(N))
     violated_constraints = np.arange(N)[constraints >= 0]
     write_and_print('\nNumber violated constraints =  '+str(violated_constraints.shape[0]), f)
 
@@ -233,7 +236,7 @@ def L1_SVM_CG(X_train, y_train, index_CG, alpha, epsilon_RC, time_limit, model, 
     #    model.update()
 
 
-    return [beta[support], b0], support, time_CG, model, index_CG, obj_val
+    return [beta, b0], support, time_CG, model, index_CG, obj_val
 
 
 

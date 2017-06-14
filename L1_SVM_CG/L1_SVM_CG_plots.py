@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import numpy as np
 
+mpl.rcParams['text.usetex'] = True
+
 
 def L1_SVM_CG_plots(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM, times_penalizedSVM_R, times_SAM_R_SVM, times_SVM_CG):
    
@@ -78,6 +80,7 @@ def L1_SVM_CG_plots(type_Sigma, N, P_list, k0, rho, tau_SNR, times_L1_SVM, times
     ax1.set_ylabel('Time', fontsize=18)
 
     ax1.set_xlim(left=0)
+    ax1.set_ylim(top=0.02)
     
     legend = ax1.legend()
     for label in legend.get_texts():
@@ -199,31 +202,42 @@ def compare_ratios(type_Sigma, N, P_list, k0, rho, tau_SNR, compare_ratio, alpha
 
 
 
-def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, legend_plot, time_or_objval):
+def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, legend_plot, time_or_objval, small_large):
 
 
-    fig = plt.figure(figsize=(10,5))
+    if small_large=='small':
+        fig = plt.figure(figsize=(6,5))
+    else:
+        fig = plt.figure(figsize=(10,5))
+
     ax1 = fig.add_subplot(1,1,1)
 
     positions = np.arange(0.5, 0.5+len(arg_list), 1)
-    
+
 
     n_to_plot   = len(times_list)
     loop_repeat = len(times_list[0])
 
+    if time_or_objval == 'objval':
+        times_list = 100*times_list
+        ax1.set_ylim(top=4)
 
 
-#--arguments
+
+    #--arguments
     colors      = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'m'}
     markers     = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
     linestyles  = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.'}
     markersizes = {0:'15', 1:'15', 2:'10', 3:'8', 4:'15'}
 
+    max_y_list = []
     for i in range(n_to_plot):
         mean_method = np.mean(times_list[i], axis=1)
         std_method  = np.std(times_list[i], axis=1)
+        print mean_method, std_method
 
         ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i], lw=3, marker=markers[i], linestyle=linestyles[i], markersize=markersizes[i])
+        max_y_list.append(int(100*np.max(mean_method)) )
         #ax1.errorbar(positions, mean_method, yerr=std_method, fmt='-o', color=colors[i], label=legend_plot[i])
 
     
@@ -231,6 +245,7 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
 #---LABELS
     ax1.set_xticks(positions)
     ax1.set_xticklabels((str(arg) for arg in arg_list))
+
 
     
     for ticks in [ax1.xaxis.get_major_ticks(), ax1.yaxis.get_major_ticks()]:
@@ -243,9 +258,14 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
     if time_or_objval == 'time':
         ax1.set_ylabel('Time (s)', fontsize=18)
     elif time_or_objval == 'objval':
-        ax1.set_ylabel('Objective values ratio ', fontsize=18)
+        ax1.set_ylabel('ARA', fontsize=18)
 
     ax1.set_xlim(left=0)
+    
+
+
+    
+
     
 
     legend = ax1.legend(loc=2)

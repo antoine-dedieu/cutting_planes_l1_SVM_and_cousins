@@ -8,6 +8,7 @@ import sys
 from gurobipy import *
 from L1_SVM_CG import *
 from L1_SVM_CG_plots import *
+from benchmark import *
 
 from R_L1_SVM import *
 
@@ -41,7 +42,7 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 #---PARAMETERS
 	epsilon_RC  = 1e-2
-	loop_repeat = 1
+	loop_repeat = 5
 	
 	n_alpha_list = 20
 	time_limit   = 30  
@@ -108,12 +109,15 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---L1 SVM 
 				write_and_print('\n###### L1 SVM with Gurobi without keeping model #####', f)
-				beta_L1_SVM, support_L1_SVM, time_L1_SVM, _, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, 0, [], False, f) #_ = range(P) 
+				if P<5e4:
+					beta_L1_SVM, support_L1_SVM, time_L1_SVM, _, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, 0, [], False, f) #_ = range(P) 
+				else:
+					time_L1_SVM = 1
 				times_L1_SVM_naive[aux_P][aux_alpha].append(time_L1_SVM)
 
 			#---L1 SVM 
 				write_and_print('\n###### L1 SVM with Gurobi without CG #####', f)
-				beta_L1_SVM, support_L1_SVM, time_L1_SVM_WS, model_L1_SVM_WS, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, model_L1_SVM_WS, [], False, f) #_ = range(P) 
+				beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM_WS, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, model_L1_SVM_WS, [], False, f) #_ = range(P) 
 				times_L1_SVM[aux_P][aux_alpha].append(time_L1_SVM)
 
 
@@ -138,7 +142,7 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---L1 SVM with CG 
 				beta_method_1    = np.zeros(P) if aux_alpha == 0 else []
-				write_and_print('\n###### L1 SVM with CG correlation, eps=1 #####', f)
+				write_and_print('\n###### L1 SVM with CG correlation, eps=5e-1 #####', f)
 				beta_method_1, support_method_1, time_method_1, model_method_1, index_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_method_1, alpha, 5e-1, time_limit, model_method_1, beta_method_1, False, f)
 				times_SVM_CG_method_1[aux_P][aux_alpha].append(time_method_1)
 				objvals_SVM_method_1[aux_P][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM))
@@ -207,7 +211,7 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 	legend_plot_1 = {0:'Naive', 1:'No CG', 2:'CG Eps=5e-1', 3:'CG Eps=1e-1', 4:'CG Eps=1e-2'}
 	times_list  = [times_L1_SVM_naive, times_L1_SVM, times_method_1, times_method_2, times_method_3]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time', 'large')
 	plt.savefig(pathname+'/compare_times_errorbar.pdf')
 	plt.close()
 
@@ -229,7 +233,7 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 	legend_plot_2 = {0:'CG Eps=5e-1', 1:'CG Eps=1e-1', 2:'CG Eps=1e-2'}
 	times_list  = [times_method_1, times_method_2, times_method_3]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time','large')
 	plt.savefig(pathname+'/compare_times_errorbar_subgroup.pdf')
 	plt.close()
 
@@ -250,7 +254,7 @@ def compare_L1_SVM_CG_path(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 #---PLOT 2 Compare subgroup
 	objvals_list  = [objvals_SVM_CG_method_1, objvals_SVM_CG_method_2, objvals_SVM_CG_method_3]
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_2, 'objval')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_2, 'objval','large')
 	plt.savefig(pathname+'/compare_objective_values_subgroup.pdf')
 	plt.close()
 

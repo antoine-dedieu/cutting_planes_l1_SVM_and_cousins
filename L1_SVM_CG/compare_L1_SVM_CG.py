@@ -43,10 +43,11 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 #---PARAMETERS
 	epsilon_RC  = 1e-2
-	loop_repeat = 3
+	loop_repeat = 5
 	
 	n_alpha_list = 1
 	time_limit   = 30  
+
 
 
 
@@ -83,9 +84,12 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 			seed_X = random.randint(0,1000)
 			X_train, X_test, l2_X_train, y_train, y_test, u_positive = simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f)
 
+			for j in range(P):    
+				X_train[:,j] *= l2_X_train[j]
+
 
 			alpha_max    = np.max(np.sum( np.abs(X_train), axis=0))                 #infinite norm of the sum over the lines
-			alpha_list   = [1e-2*alpha_max]
+			alpha_list   = [1e-6*alpha_max]
 
 
 		#---STORE FOR COMPARISONS
@@ -130,9 +134,9 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 			X_train_reduced = np.array([X_train[:,j] for j in index_CG]).T
 
 			#tau_max = 1*scaling
-			tau_max = 1
+			tau_max = 0.2
 			n_loop  = 1
-			n_iter  = 100
+			n_iter  = 200
 
 			write_and_print('\n\n###### Method 3 #####', f)
 
@@ -195,23 +199,24 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 
 			#---Compute path
-				write_and_print('\n###### L1 SVM path with CG correl 10 #####', f)
-				alpha_bis = alpha_max
-				index_columns_method_1, _   = init_correlation(X_train, y_train, 10, f)
-				beta_method_1     = []
-				time_method_1_tot = 0
+				if P<1e6:
+					write_and_print('\n###### L1 SVM path with CG correl 10 #####', f)
+					alpha_bis = alpha_max
+					index_columns_method_1, _   = init_correlation(X_train, y_train, 10, f)
+					beta_method_1     = []
+					time_method_1_tot = 0
 
-				while 0.7*alpha_bis > alpha_list[0]:
-					beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_bis, 1e-2, time_limit, model_method_1, beta_method_1, False, f)
-					alpha_bis   *= 0.7
+					while 0.5*alpha_bis > alpha_list[0]:
+						beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_bis, 1e-2, time_limit, model_method_1, beta_method_1, False, f)
+						alpha_bis   *= 0.5
+						time_method_1_tot += time_method_1
+					beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 1e-2, time_limit, model_method_1, beta_method_1, False, f)
 					time_method_1_tot += time_method_1
-				beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 1e-2, time_limit, model_method_1, beta_method_1, False, f)
-				time_method_1_tot += time_method_1
 
-				times_SVM_CG_method_1[aux_P][aux_alpha].append(time_method_1_tot)
-				objvals_SVM_method_1[aux_P][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM))
+					times_SVM_CG_method_1[aux_P][aux_alpha].append(time_method_1_tot)
+					objvals_SVM_method_1[aux_P][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM) -1.)
 
-				write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)
+					write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)
 
 
 
@@ -269,6 +274,9 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 				times_SVM_CG_method_4[aux_P][aux_alpha].append(time_correl + time_method_4)
 				objvals_SVM_method_4[aux_P][aux_alpha].append(obj_val_method_4/float(obj_val_L1_SVM) -1.)
 
+				times_SVM_CG_method_4[aux_P][aux_alpha].append(1)
+				objvals_SVM_method_4[aux_P][aux_alpha].append(0)
+
 
 
 			#---L1 SVM with CG and not deleting
@@ -282,9 +290,9 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---BENCHMARK
 				write_and_print('\n\n###### Benchmark AL_CD #####', f)
-				store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, 1e-2*alpha_max, 'single')
+				store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, 1e-6*alpha_max, 'single')
 				subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', '-d', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train_single'])
-				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, 1e-2*alpha_max, os.path.dirname(os.path.realpath(__file__)), f)
+				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, 1e-6*alpha_max, os.path.dirname(os.path.realpath(__file__)), f)
 				times_benchmark[aux_P][aux_alpha].append(time_AL_CD)
 				objvals_benchmark[aux_P][aux_alpha].append(obj_val_AL_CD/float(obj_val_L1_SVM) -1.)
 
@@ -305,30 +313,41 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 	times_benchmark = [ [ np.sum([times_benchmark[P][i][loop]    for i in range(n_alpha_list) ]) for loop in range(loop_repeat)] for P in range(len(P_list))]
 
 
-	legend_plot_1 = {0:'Regularization path', 1:'Correlation 5N + T_max=100', 2:'Correlation 10N + T_max=100', 3:'Correl top 50'}
-	legend_plot_1 = {0:'Regularization path CG', 1:'AGD SHL + CG', 2:'Benchmark AL_CD', 3:'Correlation threshold ', 4:'LP solver'}
+	#legend_plot_1 = {0:'RP path', 1:'Correlation 5N + T_max=100', 2:'Correlation 10N + T_max=100', 3:'Correl top 50'}
+	legend_plot_1 = {0:'RP CG', 1:'FO + CG', 2:'AL-CD', 3:'Correlation screening ', 4:'LP solver'}
 
 	np.save(pathname+'/times_L1_SVM', times_L1_SVM)
 	np.save(pathname+'/times_method_1', times_method_1)
-	np.save(pathname+'/times_method_3', times_SVM_CG_method_2)
+	np.save(pathname+'/times_method_3', times_method_3)
 	np.save(pathname+'/times_method_4', times_method_4)
 	np.save(pathname+'/times_benchmark', times_benchmark)
 
 	
 	times_list    = [times_method_1, times_method_3, times_benchmark, times_method_4, times_L1_SVM]
+	P_list        = [str(int(0.001*P))+'K' for P in P_list]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time')
-	plt.savefig(pathname+'/compare_times_errorbar.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time','large')
+	plt.savefig(pathname+'/compare_times_errorbar_large.pdf', bbox_inches='tight')
+	#plt.savefig('compare_times_errorbar_large.pdf', bbox_inches='tight')
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time','small')
+	plt.savefig(pathname+'/compare_times_errorbar_small.pdf', bbox_inches='tight')
 	plt.close()
 
 
 	#legend_plot_2 = {0:'Regularization path', 1:'Correlation 5N + T_max=100', 2:'Correlation 10N + T_max=100', 3:'Benchmark AL_CD'}
-	legend_plot_2 = {0:'Regularization path CG', 1:'AGD SHL + CG', 2:'Benchmark AL_CD'}
+	legend_plot_2 = {0:'RP CG', 1:'FO + CG', 2:'AL-CD'}
 	times_list    = [times_method_1, times_method_3, times_benchmark]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time')
-	plt.savefig(pathname+'/compare_times_errorbar_subgroup.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time','large')
+	plt.savefig(pathname+'/compare_times_errorbar_subgroup_large.pdf', bbox_inches='tight')
+	#plt.savefig('compare_times_errorbar_subgroup_large.pdf', bbox_inches='tight')
 	plt.close()
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time','small')
+	plt.savefig(pathname+'/compare_times_errorbar_subgroup_small.pdf', bbox_inches='tight')
+	plt.close()
+
 
 
 
@@ -349,8 +368,13 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 	objvals_list    = [objvals_SVM_CG_method_1, objvals_SVM_CG_method_3, objvals_benchmark]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_2, 'objval')
-	plt.savefig(pathname+'/compare_objvals_errorbar_subgroup.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_2, 'objval','large')
+	plt.savefig(pathname+'/compare_objective_values_large.pdf', bbox_inches='tight')
+	#plt.savefig('compare_objective_values_large.pdf', bbox_inches='tight')
+	plt.close()
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_2, 'objval','small')
+	plt.savefig(pathname+'/compare_objective_values_small.pdf', bbox_inches='tight')
 	plt.close()
 
 	#np.save(pathname+'/../../L1_SVM_results_to_plot/objvals_SVM_CG_method_0', times_L1_SVM)
@@ -398,8 +422,11 @@ def plot():
 	legend_plot_1 = {0:'Compute path', 1:'Correl top 1k + T_max = 100', 2:'Correl top 50', 3:'No CG', 4:'ADMM'}
 	times_list  = [times_method_1, times_method_2, times_method_3, times_method_0, times_SVM_CG_ADMM]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time')
-	plt.savefig(pathname+'/compare_times_errorbar.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time','large')
+	plt.savefig(pathname+'/compare_times_errorbar_large.pdf')
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_1, 'time','small')
+	plt.savefig(pathname+'/compare_times_errorbar_small.pdf')
 	plt.close()
 
 
@@ -408,8 +435,11 @@ def plot():
 	legend_plot_2 = {0:'Compute path', 1:'Correl top 1k + T_max = 100', 2:'Correl top 50'}
 	times_list  = [times_method_1, times_method_2, times_method_3]
 
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time')
-	plt.savefig(pathname+'/compare_times_errorbar_subgroup.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time','large')
+	plt.savefig(pathname+'/compare_times_errorbar_subgroup_large.pdf')
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, times_list, legend_plot_2, 'time','small')
+	plt.savefig(pathname+'/compare_times_errorbar_subgroup_small.pdf')
 	plt.close()
 
 
@@ -419,8 +449,11 @@ def plot():
 
 	objvals_list  = [objvals_method_1, objvals_method_2, objvals_method_3, objvals_method_0]
 	
-	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_3, 'objval')
-	plt.savefig(pathname+'/compare_objective_values.pdf')
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_3, 'objval','large')
+	plt.savefig(pathname+'/compare_objective_values_large.pdf')
+
+	L1_SVM_plots_errorbar(type_Sigma, P_list, k0, rho, tau_SNR, objvals_list, legend_plot_3, 'objval','small')
+	plt.savefig(pathname+'/compare_objective_values_small.pdf')
 	plt.close()
 
 
