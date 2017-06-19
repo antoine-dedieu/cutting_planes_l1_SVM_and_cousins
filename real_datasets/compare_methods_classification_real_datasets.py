@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 import datetime
 import os
@@ -41,7 +40,7 @@ def compare_methods_classification_real_datasets(type_loss, type_real_dataset, p
 	#Computation parameters
 	K0_list   = range(15)
 	epsilon   = 1e-3
-	N_alpha   = 10 if type_loss=='logreg' else 50#10-4
+	N_alpha   = 100 if type_loss=='logreg' else 50#10-4
 	number_NS = 2
 
 
