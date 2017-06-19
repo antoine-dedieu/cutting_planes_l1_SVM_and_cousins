@@ -32,7 +32,7 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 
 	#Computation parameters
-	K0_list   = range(15)
+	K0_list   = range(5)
 	epsilon   = 1e-3
 	N_alpha   = 100 if type_loss=='logreg' else 50#10-4
 	number_NS = 2

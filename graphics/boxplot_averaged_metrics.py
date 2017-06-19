@@ -17,6 +17,8 @@ def boxplot_averaged_metrics(metric_to_plot, name_metric):
     dict_accuracy_sparsity_length = {'l2_estimation':4, 'misclassification':4, 'sparsity':3, 'true_positive':3}
     number_plots = dict_accuracy_sparsity_length[name_metric]
 
+    print metric_to_plot
+
     #new_metric_to_plot = []
     #for j in range(len(metric_to_plot)):
     #    new_metric_to_plot.append( metric_to_plot[j][:number_plots].tolist() )

@@ -18,19 +18,17 @@ def write_and_print(text,f):
 def process_data_real_datasets(type_real_dataset):
 
     if(type_real_dataset==0):
-        g=open('../../datasets/ovarian.data',"r")
+        g=open('../../../datasets/datasets_unprocessed/ovarian.data',"r")
         dict_type = {'Normal\n':-1,'Cancer\n':1}
-        #h=open('../../datasets/lungCancer_test.data',"r")
-        #dict_type = {'Mesothelioma\r\n':-1,'ADCA\r\n':1}
     
     if(type_real_dataset==1):
-        g=open('../../datasets/lungCancer_train.data',"r")
-        h=open('../../datasets/lungCancer_test.data',"r")
+        g=open('../../../datasets/datasets_unprocessed/lungCancer_train.data',"r")
+        h=open('../../../datasets/datasets_unprocessed/lungCancer_test.data',"r")
         dict_type = {'Mesothelioma\r\n':-1,'ADCA\r\n':1}
 
     elif(type_real_dataset==2):
-        g=open('../../datasets/leukemia_train.data',"r")
-        h=open('../../datasets/leukemia_test.data',"r")
+        g=open('../../../datasets/datasets_unprocessed/leukemia_train.data',"r")
+        h=open('../../../datasets/datasets_unprocessed/leukemia_test.data',"r")
         dict_type = {'ALL\r\r\n':-1,'AML\r\r\n':1}
 
 
@@ -72,8 +70,8 @@ def process_data_real_datasets(type_real_dataset):
 
 
     dict_title = {0:'ovarian', 1:'lungCancer', 2:'leukemia'}
-    np.savetxt('../../datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt', X)
-    np.savetxt('../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt', y)
+    np.savetxt('../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt', X)
+    np.savetxt('../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt', y)
 
     #np.savetxt('datasets_processed/'+str(dict_title[type_real_dataset])+'/y_train_'+str(size)+'.txt', y_train)
     #np.savetxt('datasets_processed/'+str(dict_title[type_real_dataset])+'/y_test_'+str(size)+'.txt',  y_test)
@@ -87,8 +85,8 @@ def split_real_dataset(type_real_dataset, f):
     dict_title = {0:'ovarian', 1:'lungCancer', 2:'leukemia'}
     size = 0
 
-    X   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
-    y   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
+    X   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
+    y   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
     N,P = X.shape
 
     return X, y, 0
@@ -102,13 +100,10 @@ def split_real_dataset_bis(type_real_dataset, f):
     dict_title = {1:'lungCancer', 2:'leukemia'}
     size = 0
 
-    X   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
-    y   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
+    X   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
+    y   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
     N,P = X.shape
 
-
-    #y_train = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y_train_'+str(size)+'.txt')
-    #y_test  = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y_test_'+str(size)+'.txt')
 
 
 
@@ -151,22 +146,19 @@ def split_real_dataset_bis(type_real_dataset, f):
 
 #------------NORMALIZE------------- 
     
-#---Normalize all the X columns
-    #l2_y_train = np.linalg.norm(y_train)
-    #y_train = y_train/float(l2_y_train)
 
     l2_X_train   = []
-
     for i in range(P):
         l2 = np.linalg.norm(X_train[:,i])
         l2_X_train.append(l2)        
         X_train[:,i] = X_train[:,i]/float(l2)
 
 
-    print 'DATA CREATED'
-    f.write('DATA CREATED')
+    return X_train, X_test, y_train, y_test, seed, l2_X_train 
 
-    return X_train, X_test, y_train, y_test, seed
+
+
+
 
 
 

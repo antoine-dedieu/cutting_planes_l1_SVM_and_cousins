@@ -46,4 +46,4 @@ def plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l
 	bars_metrics(true_positive, 'true_positive')
 	plt.savefig(pathname+'/'+name_metric+'/test_true_positive.pdf')
 
-	return l2_estimation, misclassification, sparsity, true_positive
+	return l2_estimation, misclassification, sparsity[:3], true_positive[:3]

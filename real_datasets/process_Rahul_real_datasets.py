@@ -10,16 +10,16 @@ def process_Rahul_real_datasets(type_real_dataset):
 
 	if type_real_dataset ==3:
 		N_real, P_real = 58, 12625
-		train_data   = open('../../datasets/radsens.x.txt',"r")
-		train_labels = open('../../datasets/radsens.y.txt',"r")
+		train_data   = open('../../../datasets/datasets_unprocessed/radsens.x.txt',"r")
+		train_labels = open('../../../datasets/datasets_unprocessed/radsens.y.txt',"r")
 	
 	if type_real_dataset ==6:
 		N_real, P_real = 198, 16063
-		train_data = open('../../datasets/14cancer.xtrain.txt',"r")
-        valid_data = open('../../datasets/14cancer.xtest.txt',"r")
+		train_data = open('../../../datasets/datasets_unprocessed/14cancer.xtrain.txt',"r")
+        valid_data = open('../../../datasets/datasets_unprocessed/14cancer.xtest.txt',"r")
 
-        train_labels = open('../../datasets/14cancer.ytrain.txt',"r")
-        valid_labels = open('../../datasets/14cancer.ytest.txt',"r")
+        train_labels = open('../../../datasets/datasets_unprocessed/14cancer.ytrain.txt',"r")
+        valid_labels = open('../../../datasets/datasets_unprocessed/14cancer.ytest.txt',"r")
 
 
 	X = np.zeros((N_real, P_real))
@@ -74,11 +74,11 @@ def process_Rahul_real_datasets(type_real_dataset):
 		X[:,i] /= np.linalg.norm(X[:,i] + 1e-10)
 		
 	if type_real_dataset ==3:
-		np.savetxt('../../datasets_processed/radsens/X.txt', X_train)
-		np.savetxt('../../datasets_processed/radsens/y.txt', y_train)
+		np.savetxt('../../../datasets/datasets_processed/radsens/X.txt', X_train)
+		np.savetxt('../../../datasets/datasets_processed/radsens/y.txt', y_train)
 	if type_real_dataset ==6:
-		np.savetxt('../../datasets_processed/14cancer/X.txt', X_train)
-		np.savetxt('../../datasets_processed/14cancer/y.txt', y_train)
+		np.savetxt('../../../datasets/datasets_processed/14cancer/X.txt', X_train)
+		np.savetxt('../../../datasets/datasets_processed/14cancer/y.txt', y_train)
 
 
 
@@ -89,8 +89,8 @@ def split_Rahul_real_dataset(type_real_dataset, f):
     dict_title = {3:'radsens', 4:'14cancer'}
     size = 0
 
-    X   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
-    y   = np.loadtxt(current_path+'/../../datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
+    X   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
+    y   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
     N,P = X.shape
 
     return X, y, 0
@@ -99,12 +99,14 @@ def split_Rahul_real_dataset(type_real_dataset, f):
 
 
 
-def split_Rahul_real_dataset_bis(f):
+def split_Rahul_real_dataset_bis(type_real_dataset, f):
 
 	current_path = os.path.dirname(os.path.realpath(__file__))
 
-	X   = np.loadtxt(current_path+'/../../datasets_processed/radsens/X.txt')
-	y   = np.loadtxt(current_path+'/../../datasets_processed/radsens/y.txt')
+	dict_title = {3:'radsens', 4:'14cancer'}
+
+	X   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
+	y   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
 	N,P = X.shape
 
 
@@ -137,7 +139,17 @@ def split_Rahul_real_dataset_bis(f):
 	write_and_print('Test size : '+str(X_test.shape),f)
 
 
-	return X_train, X_test, y_train, y_test, seed
+#------------NORMALIZE------------- 
+    
+
+	l2_X_train   = []
+	for i in range(P):
+		l2 = np.linalg.norm(X_train[:,i])
+		l2_X_train.append(l2)        
+		X_train[:,i] = X_train[:,i]/float(l2)
+
+
+	return X_train, X_test, y_train, y_test, seed, l2_X_train 
 
 
 
