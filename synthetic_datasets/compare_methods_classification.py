@@ -114,6 +114,7 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 		l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation)
 		metrics.append([l2_estimation, misclassification, sparsity, true_positive])
+		np.save(pathname+'/'+name_metric_validation+'/metrics', [l2_estimation, misclassification, sparsity, true_positive])
 
 	plt.close('all')
 	f.close()
