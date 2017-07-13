@@ -2,8 +2,6 @@ import sys
 from compare_methods_classification import *
 
 
-type_Sigma = 4
-
 rho_dmu_Sigma2  = [(.2,.5), (.2,.8), (.2,1), (.2, 1.5),
 				   (.5,.8), (.5,1), (.5,1.5), (.5,2)]
 rho_dmu_Sigma4  = [(.2,1), (.2,2), (.2,5), (.2,10), 
@@ -17,6 +15,7 @@ dict_rho_NP = [(0,50, 100),   (.2,50, 100),   (.5,50, 100),
 				   
 
 rho, N, P = dict_rho_NP[int(sys.argv[1])]
+
 
 n_average = 5
 average_simulations_compare_methods_classification_with_SNR('logreg', N, P, 7, rho, 4, n_average)
