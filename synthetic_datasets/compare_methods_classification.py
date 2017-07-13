@@ -18,6 +18,7 @@ from heuristics_classification import *
 sys.path.append('../graphics')
 from plot_validation_metrics import *
 from boxplot_averaged_metrics import *
+from plots_errorbar_SNR import *
 
 
 
@@ -32,10 +33,10 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 
 	#Computation parameters
-	K0_list   = range(5)
+	K0_list   = range(15)
 	epsilon   = 1e-3
 	N_alpha   = 100 if type_loss=='logreg' else 50#10-4
-	number_NS = 2
+	number_NS = 0
 
 
 
@@ -146,6 +147,48 @@ def average_simulations_compare_methods_classification(type_loss, N, P, k0, rho,
 				boxplot_averaged_metrics(metric_averaged,  name_metric)
 				plt.savefig(pathname+'/'+name_metric_validation+'/'+name_metric+'.pdf')
 
+
+
+
+def average_simulations_compare_methods_classification_with_SNR(type_loss, N, P, k0, rho, type_Sigma, n_average):
+
+
+	DT = datetime.datetime.now()
+	pathname = str(DT.year)+'_'+str(DT.month)+'_'+str(DT.day)+'-'+str(DT.hour)+'h'+str(DT.minute)+'-N'+str(N)+'_P'+str(P)+'_k0'+str(k0)+'_rho'+str(rho)+'_Sigma'+str(type_Sigma)+'_'+type_loss
+	pathname = r'../../synthetic_datasets_results/'+type_loss+'/'+str(pathname)
+
+	all_metric_averaged = []
+	SNR_list            = [0.5, 1, 2, 5, 10, 20, 50]
+
+	N_metrics  = 4
+	N_oponents = {0:4, 1:4, 2:3, 3:3}
+
+	for SNR in SNR_list:
+		pathname_bis = pathname+'/dmu'+str(SNR)
+		metrics_to_average_SNR = [compare_methods_classification(type_loss, N, P, k0, rho, SNR, type_Sigma, pathname_bis) for i in range(n_average)]
+		
+		aux_val = 1
+		metric_averaged_SNR    = np.array([[ metrics_to_average_SNR[simu][aux_val][aux_metric] for aux_metric in range(N_metrics) ] for simu in range(n_average)]) #no more aux_val
+		all_metric_averaged.append(metric_averaged_SNR)
+
+
+	legends        = ['L1+L0', 'L2+L0', 'L1', 'L2']
+	name_metrics   = ['l2_estimation', 'misclassification', 'sparsity', 'true_positive']
+
+	for i in range(N_metrics):
+		metric_averaged = [[[all_metric_averaged[a][b][i][c] for b in range(n_average)] for a in range(len(SNR_list))] for c in range(N_oponents[i])] 
+
+		#print '\n'
+		#print name_metrics[i]
+		#print [[all_metric_averaged[a][0][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
+		#print [[all_metric_averaged[a][1][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
+		#print [[all_metric_averaged[a][2][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
+
+		plots_errorbar_SNR(SNR_list, metric_averaged, legends, name_metrics[i])
+		plt.savefig(pathname+'/'+name_metrics[i]+'.pdf', bbox_inches='tight')
+		plt.close()
+
+		np.save(pathname+'/metrics_averaged', metric_averaged)
 
 
 

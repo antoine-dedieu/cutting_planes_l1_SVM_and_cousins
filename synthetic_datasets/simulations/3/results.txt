@@ -1,0 +1,51 @@
+
+
+DATA CREATED for N=100, P=10000, k0=7 Rho=0.2 Sigma=4 Seed_X=112
+
+DATA CREATED for N=10000, P=10000, k0=7 Rho=0.2 Sigma=4 Seed_X=112
+
+
+HEURISTIC up for logreg loss and l1 penalization: 
+K= 1
+K= 2
+K= 3
+K= 4
+Moves across alpha : [0, 49, 89, 58, 40]
+Moves across K     : [0, 50, 10, 41, 59]
+Time               : 836.56
+
+
+HEURISTIC down for logreg loss and l1 penalization: 
+K= 3
+K= 2
+K= 1
+Moves across alpha : [0, 38, 52, 80, 0]
+Moves across K     : [0, 61, 47, 19, 0]
+Time               : 744.76
+
+BEST OF UP / DOWN ?
+UP    : [0, 44, 41, 54, 93]
+DOwN  : [100, 56, 59, 46, 7]
+
+
+HEURISTIC up for logreg loss and l2 penalization: 
+K= 1
+K= 2
+K= 3
+K= 4
+Moves across alpha : [0, 0, 38, 0, 2]
+Moves across K     : [0, 99, 61, 99, 97]
+Time               : 842.17
+
+
+HEURISTIC down for logreg loss and l2 penalization: 
+K= 3
+K= 2
+K= 1
+Moves across alpha : [0, 0, 0, 0, 0]
+Moves across K     : [0, 99, 99, 99, 0]
+Time               : 733.24
+
+BEST OF UP / DOWN ?
+UP    : [0, 0, 0, 49, 49]
+DOwN  : [100, 100, 100, 51, 51]

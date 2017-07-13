@@ -24,7 +24,8 @@ def boxplot_averaged_metrics(metric_to_plot, name_metric):
     #    new_metric_to_plot.append( metric_to_plot[j][:number_plots].tolist() )
 
 #---Boxplots
-    bp  = ax.boxplot(metric_to_plot, 0, '')
+    medianprops = dict(linewidth=2.5, color='k')
+    bp  = ax.boxplot(metric_to_plot, 0, '', medianprops=medianprops)
 
     for i in range(number_plots):
         box = bp['boxes'][i]
