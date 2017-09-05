@@ -1,4 +1,4 @@
-    import numpy as np
+import numpy as np
 import time
 import math
 
@@ -21,9 +21,7 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
     start_time = time.time()
     N, P  = X.shape
 
-    old_beta = -np.ones(P+1)
-
-
+    old_beta = np.ones(P+1)
 
     beta_m = beta_start
 
@@ -44,8 +42,7 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
     
 
 
-    while(np.linalg.norm(beta_m-old_beta)>1e-4 and test < n_iter): 
-        
+    while(np.linalg.norm(beta_m-old_beta)>1e-3 and test < n_iter): 
         #print np.linalg.norm(beta_m-old_beta)
         test+=1
         aux = ones_N - y*np.dot(X_add,beta_m)
@@ -59,29 +56,21 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
             gradient_loss = -0.5*np.dot(X_add.T, gradient_aux)
 
 
-
         if (type_loss=='squared_hinge'):
             xi            = [max(0,aux[i]) for i in range(N)]
             gradient_loss = -2*np.sum([y[i]*xi[i]*X_add[i,:] for i in range(N)], axis=0)
 
 
-
     #---Gradient descent
-        old_beta    = beta_m 
-        
-        grad = beta_m - 1/float(Lipchtiz_coeff)*gradient_loss
+        old_beta = beta_m 
+        grad     = beta_m - 1/float(Lipchtiz_coeff)*gradient_loss
 
 
     #---Thresholding of top 100 guys !
-        #eta_m    = np.zeros(P+1)
-        #eta_m[P] = grad[P]
-        #index    = np.abs(eta_m[:P]).argsort()[::-1][:50]
-
         dict_thresholding = {'l1': soft_thresholding_l1,
                              'l2': soft_thresholding_l2}
         eta_m = np.array([ dict_thresholding[type_penalization](grad[i], alpha/Lipchtiz_coeff) for i in range(P)] + [grad[P]])
-        
-        
+   
 
     #---AGD
         t_AGD     = (1 + math.sqrt(1+4*t_AGD_old**2))/2.
@@ -92,18 +81,11 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
         t_AGD_old = t_AGD
         eta_m_old = eta_m
 
-
-
-        #support = np.where(beta_m != 0)[0]
-
-        #print'\n Iteration: '+str(test)
-        #print np.max(np.abs(beta_m[support]))
-
     
     
 
     write_and_print('\nNumber of iterations: ' +str(test), f)
-    #write_and_print('\nNumber of iterations: ' +str(test), f)
+    write_and_print('Shape: ' +str(X.shape), f)
 
 #---Keep top 50
     #index    = np.abs(beta_m[:P]).argsort()[::-1][:50]
@@ -118,10 +100,11 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
 
 
 #---Constraints
-    #constraints = ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]) + b0*ones_N)
-    constraints = 1.1*ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]))
+    ##### USE B0 !!!!!!!
+
+    constraints = 1.05*ones_N - y*( np.dot(X[:,idx_columns_smoothing], beta_m[idx_columns_smoothing]) + b0* ones_N)
     idx_samples_smoothing = np.arange(N)[constraints >= 0]
-    write_and_print('Len dual smoothing: '+str(idx_samples_smoothing.shape[0]), f)
+    write_and_print('Number violated constraints: '+str(idx_samples_smoothing.shape[0]), f)
     write_and_print('Convergence rate    : ' +str(round(np.linalg.norm(beta_m-old_beta), 3)), f) 
     
     time_smoothing = time.time()-start_time
@@ -141,7 +124,7 @@ def smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, beta_start, 
 
 
 
-def loop_smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, tau_max, n_loop, time_limit, n_iter, f):
+def loop_smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, tau_max, n_loop, n_iter, f):
     
 #n_loop: how many times should we run the loop ?
 #Apply the smoothing technique from the best subset selection
@@ -154,7 +137,7 @@ def loop_smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, tau_max
     X_add       = 1/math.sqrt(N)*np.ones((N, P+1))
     X_add[:,:P] = X
 
-    highest_eig     = power_method(X_add, P+1)
+    highest_eig     = power_method(X_add)
 
 
     beta_smoothing  = np.zeros(P+1)
@@ -164,7 +147,8 @@ def loop_smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, tau_max
     tau = tau_max
     
     test = 0
-    while(np.linalg.norm(beta_smoothing-old_beta)>1e-4 and test < n_loop): 
+    while(np.linalg.norm(beta_smoothing-old_beta)>1e-2 and test < n_loop): 
+        print 'TEST CV BEFORE TAU: '+str(np.linalg.norm(beta_smoothing-old_beta))
 
         test += 1
         old_beta = beta_smoothing
@@ -179,89 +163,170 @@ def loop_smoothing_hinge_loss(type_loss, type_penalization, X, y, alpha, tau_max
     #print beta_smoothing[idx_columns]
 
     time_smoothing_tot = time.time()-start_time
-    write_and_print('\nNumber of iterations                       : '+str(test), f)
+    write_and_print('\nNumber of iterations              : '+str(test), f)
     write_and_print('Total time smoothing for '+str(type_loss)+': '+str(round(time_smoothing_tot, 3)), f)
 
-    return idx_samples, idx_columns, time_smoothing_sum, beta_smoothing[:P]
+    return idx_samples, idx_columns, time_smoothing_sum, beta_smoothing
 
 
 
 
 
 
-def loop_smoothing_hinge_loss_restriction(type_loss, type_penalization, X, y, alpha, n_loop, time_limit, f):
+def loop_smoothing_hinge_loss_samples_restricted(type_loss, type_penalization, X, y, alpha, tau_max, n_loop, n_iter, f):
     
 #n_loop: how many times should we run the loop ?
 #Apply the smoothing technique from the best subset selection
-
+    
+    start_time = time.time()
     N, P = X.shape
-    #old_beta = -np.ones(P+1)
+    old_beta = -np.ones(P+1)
+
 
 #---New matrix and SVD
     X_add       = 1/math.sqrt(N)*np.ones((N, P+1))
     X_add[:,:P] = X
-    U, diag, V  = np.linalg.svd(X_add)
-    max_svd     = np.max(np.abs(diag))
+    highest_eig = power_method(X_add)
 
 
-    beta_smoothing_restricted  = np.zeros(P+1)
-    X_reduced   = X
-    idx_columns = np.arange(P)
-
+#---Results
+    beta_smoothing  = np.zeros(P+1)
     time_smoothing_sum = 0
+    tau = tau_max
 
+
+#---Prepare for restrcition
+    idx_samples = np.arange(N)
+    X_reduced   = X
+    y_reduced   = y
     
-    tau = 1
     
-    for i in range(n_loop):
-        old_beta = beta_smoothing_restricted
+    test = -1
+    while(np.linalg.norm(beta_smoothing-old_beta)>1e-2 and test < n_loop): 
+        print 'TEST CV BEFORE TAU'
+        print np.linalg.norm(beta_smoothing-old_beta)
+
+        test += 1
+        old_beta = beta_smoothing
         
-        _, idx_columns_restricted, time_smoothing, aux_beta_smoothing_restricted = smoothing_hinge_loss(type_loss, type_penalization, X_reduced, y, alpha, beta_smoothing_restricted, X_add, max_svd, tau, f)
-     
-
-    #---Restrict to columns
-        X_reduced    = np.array([X_reduced[:,j] for j in idx_columns_restricted]).T
-
-        P_reduced   = len(idx_columns_restricted)
-
-        X_add               = 1/math.sqrt(N)*np.ones((N, P_reduced+1))
-        X_add[:,:P_reduced] = X_reduced
-
-        U, diag, V  = np.linalg.svd(X_add)
-        max_svd     = np.max(np.abs(diag))
-
-        beta_smoothing_restricted             = np.zeros(P_reduced+1)
-        beta_smoothing_restricted[:P_reduced] = aux_beta_smoothing_restricted[idx_columns_restricted]
+        idx_samples_restricted, _, time_smoothing, beta_smoothing = smoothing_hinge_loss(type_loss, type_penalization, X_reduced, y_reduced, alpha, beta_smoothing, X_add, highest_eig, tau, n_iter, f)
 
 
-    #---Update parameters
-        idx_columns  = idx_columns[idx_columns_restricted]
+        if test == 0:
+        #---Restrict to samples
+            X_reduced = X_reduced[idx_samples_restricted,:] 
+            y_reduced = np.array(y)[idx_samples_restricted]
+            N_reduced = len(idx_samples_restricted)
+
+            X_add         = 1/math.sqrt(N)*np.ones((N_reduced, P+1))
+            X_add[:,:P]   = X_reduced
+            highest_eig   = power_method(X_add)
+            idx_samples   = idx_samples[idx_samples_restricted]
+    
+
+    #---Update parameters        
         time_smoothing_sum += time_smoothing
-        tau = 0.7 *tau
+        tau = 0.7*tau
 
 
-#---Final estimator
-    beta_smoothing = np.zeros(P+1)
-    for i in range(len(idx_columns)):
-        beta_smoothing[idx_columns[i]] = beta_smoothing_restricted[i]
+    time_smoothing_tot = time.time()-start_time
+    write_and_print('\nNumber of iterations              : '+str(test), f)
+    write_and_print('Total time smoothing for '+str(type_loss)+': '+str(round(time_smoothing_tot, 3)), f)
 
-    write_and_print('Time smoothing for '+str(type_loss)+': '+str(time_smoothing_sum), f)
+    return idx_samples.tolist(), time_smoothing_sum, beta_smoothing
 
-    #if len(support_smoothing) >500:
-    #    beta = beta_smoothing
-    #    support_smoothing     = np.abs(beta[:P]).argsort()[::-1][:50]
-    #    beta_smoothing        = np.zeros(P)
-    #    beta_smoothing[support_smoothing] = beta[support_smoothing]
-    #    support_smoothing = support_smoothing.tolist()
+
+
+
+
+
+
+def loop_smoothing_hinge_loss_columns_samples_restricted(type_loss, type_penalization, X, y, alpha, tau_max, n_loop, n_iter, f):
+    
+#n_loop: how many times should we run the loop ?
+#Apply the smoothing technique from the best subset selection
+    
+    start_time = time.time()
+    N, P = X.shape
+    old_beta   = -np.ones(P+1)
+
+
+#---New matrix and SVD
+    X_add       = 1/math.sqrt(N)*np.ones((N, P+1))
+    X_add[:,:P] = X
+    highest_eig = power_method(X_add)
+
+
+#---Results
+    beta_smoothing  = np.zeros(P+1)
+    time_smoothing_sum = 0
+    tau = tau_max
+
+
+#---Prepare for restriction
+    X_reduced    = X
+    y_reduced    = y
+    idx_columns_restricted = np.arange(P)
+    
+    
+    test = -1
+    while(np.linalg.norm(beta_smoothing-old_beta)>1e-2 and test < n_loop): 
+        print 'TEST CV BETWEEN 2 VALUES OF TAU: '+str(np.linalg.norm(beta_smoothing-old_beta))
+        if test == 0:
+            old_beta  = np.concatenate([beta_smoothing[idx_columns_restricted], [beta_smoothing[-1]] ])
+        else:
+            old_beta  = beta_smoothing
         
-    return idx_columns.tolist(), idx_columns.tolist(), time_smoothing_sum, beta_smoothing
-        
+        test += 1
+        idx_samples_restricted, idx_columns_restricted, time_smoothing, beta_smoothing = smoothing_hinge_loss(type_loss, type_penalization, X_reduced, y_reduced, alpha, old_beta, X_add, highest_eig, tau, n_iter, f)
+
+        if test == 0:
+        #---Dont change samples -> just restrict columns
+            X_reduced = X_reduced[:, idx_columns_restricted]
+            P_reduced = X_reduced.shape[1]
+
+            X_add         = X_add[:, idx_columns_restricted+[P]]
+            #X_add[:, :-1] = X_reduced
+            highest_eig   = power_method(X_add)
+            idx_columns   = idx_columns_restricted
+    
+
+    #---Update parameters        
+        time_smoothing_sum += time_smoothing
+        tau    = 0.7*tau
+        n_iter = 50
+
+#---Results
+    beta_smoothing_sample = np.zeros(P+1)
+    for i in range(len(idx_columns)): beta_smoothing_sample[idx_columns[i]] = beta_smoothing[i]
+
+    time_smoothing_tot = time.time()-start_time
+    write_and_print('\nNumber of iterations              : '+str(test), f)
+    write_and_print('Total time smoothing for '+str(type_loss)+': '+str(round(time_smoothing_tot, 3)), f)
+
+    #return idx_samples.tolist(), idx_columns.tolist(), time_smoothing_sum, beta_smoothing
+    return beta_smoothing_sample
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 #POWER METHOD to compute the SVD of XTX
 
-def power_method(X, P):
+def power_method(X):
+    P = X.shape[1]
+
     highest_eigvctr     = np.random.rand(P)
     old_highest_eigvctr = -1
     
@@ -277,6 +342,7 @@ def power_method(X, P):
 
 
 def soft_thresholding_l1(c,alpha):
+
     if(alpha>=abs(c)):
         return 0
     else:

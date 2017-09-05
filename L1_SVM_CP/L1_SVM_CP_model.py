@@ -9,7 +9,7 @@ from simulate_data_classification import *
 
 def L1_SVM_CP_model(X, y, idx_CP, alpha, time_limit, model, warm_start, f):
 
-#idx_CG    = index of the features used to generate 
+#idx_CP    = index of the constraints used to generate 
 #MODEL     = previous model to speed up
     
 
@@ -87,7 +87,6 @@ def L1_SVM_CP_model(X, y, idx_CP, alpha, time_limit, model, warm_start, f):
 
 def add_constraints_L1_SVM(X, y, L1_SVM_CP, violated_constraints, beta_plus, beta_minus, b0, idx_columns):
 # Add a column in a model with respective constraints
-    
 
     
     for violated_constraint in violated_constraints:

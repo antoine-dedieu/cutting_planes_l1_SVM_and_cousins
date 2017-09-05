@@ -89,7 +89,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 
 			alpha_max    = np.max(np.sum( np.abs(X_train), axis=0))                 #infinite norm of the sum over the lines
-			alpha_list   = [1e-6*alpha_max]
+			alpha_list   = [1e-2*alpha_max]
 
 
 		#---STORE FOR COMPARISONS
@@ -99,7 +99,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			n_features = 50
 			index_SVM_CG_correl, time_correl   = init_correlation(X_train, y_train, n_features, f) #just for highest alpha
-			index_SVM_CG_liblinear, time_liblinear, beta_liblinear = liblinear_for_CG('squared_hinge_l1', X_train, y_train, alpha_list[0], f)
+			#index_SVM_CG_liblinear, time_liblinear, beta_liblinear = liblinear_for_CG('squared_hinge_l1', X_train, y_train, alpha_list[0], f)
 
 
 
@@ -187,7 +187,7 @@ def compare_L1_SVM_CG(type_Sigma, N, P_list, k0, rho, tau_SNR):
 
 			#---L1 SVM 
 				write_and_print('\n###### L1 SVM with Gurobi without CG without warm start #####', f)
-				if P<1e6:
+				if P<1e2:
 					beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha_list[0], 0, time_limit, model_L1_SVM, [], False, f) #_ = range(P) 
 				else:
 					#beta_L1_SVM, support_L1_SVM, time_L1_SVM, model_L1_SVM, _, obj_val_L1_SVM = L1_SVM_CG(X_train, y_train, range(P), alpha, 0, time_limit, model_L1_SVM, [], False, f) #_ = range(P) 

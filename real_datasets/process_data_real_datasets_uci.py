@@ -46,7 +46,6 @@ def process_data_real_datasets_uci(type_real_dataset):
         train_labels = open('../../datasets/arcene_train.labels.txt',"r")
         valid_labels = open('../../datasets/arcene_valid.labels.txt',"r")
 
-
     X = np.zeros((N_real, P_real))
     y = np.zeros(N_real)
 

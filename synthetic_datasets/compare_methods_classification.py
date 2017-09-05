@@ -14,12 +14,13 @@ from test_metrics import *
 
 sys.path.append('../algorithms')
 from heuristics_classification import *
+from neighborhood_search_classification import *
+from Gurobi_SVM import *
 
 sys.path.append('../graphics')
 from plot_validation_metrics import *
 from boxplot_averaged_metrics import *
 from plots_errorbar_SNR import *
-
 
 
 
@@ -33,10 +34,10 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 
 	#Computation parameters
-	K0_list   = range(15)
+	K0_list   = range(5)
 	epsilon   = 1e-3
-	N_alpha   = 100 if type_loss=='logreg' else 50#10-4
-	number_NS = 0
+	N_alpha   = 10 if type_loss=='logreg' else 5#10-4
+	number_NS = 1
 
 
 
@@ -78,7 +79,6 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 	
 #---HEURISTIC 3
 	#l1
@@ -94,28 +94,90 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 	betas_l2, train_errors_l2 = best_of_up_down(train_errors_up, train_errors_down, betas_up, betas_down, K0_list, N_alpha, f)
 
-
 	
 #---COMPARE 
 	betas        = [betas_l1, betas_l2, betas_l1_SVM, betas_l2_SVM]
 	train_errors = [train_errors_l1, train_errors_l2, train_errors_l1_SVM, train_errors_l2_SVM]
+	alphas       = [alphas_l1, alphas_l2]
 	metrics      = []
 
-	for name_metric_validation in ['l2_estimation', 'misclassification']:
-		argmin_betas, best_k_plot, all_k_plot = validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric_validation, K0_list, N_alpha)
-		
-		os.makedirs(pathname+'/'+name_metric_validation)
+	# For later MIO
+	argmin_params_list = []
+	argmin_betas_list  = []
 
+	for name_metric_validation in ['l2_estimation', 'misclassification']:
+		argmin_betas, argmin_params, best_k_plot, all_k_plot = validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric_validation, K0_list, N_alpha, alphas)
+
+		os.makedirs(pathname+'/'+name_metric_validation)
 		compare_best_k(best_k_plot, name_metric_validation)
-		plt.savefig(pathname+'/'+name_metric_validation+'/best_k.pdf')
+		plt.savefig(pathname+'/'+name_metric_validation+'/best_k_heuristic.pdf')
 
 		compare_all_k(all_k_plot, K0_list, name_metric_validation)
-		plt.savefig(pathname+'/'+name_metric_validation+'/all_k.pdf')
+		plt.savefig(pathname+'/'+name_metric_validation+'/all_k_heuristic.pdf')
 		
 
-		l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation)
+		l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation, name_end='_heuristic')
 		metrics.append([l2_estimation, misclassification, sparsity, true_positive])
 		np.save(pathname+'/'+name_metric_validation+'/metrics', [l2_estimation, misclassification, sparsity, true_positive])
+
+		#For later MIO
+		argmin_params_list.append(argmin_params)
+		argmin_betas_list.append( argmin_betas)
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#---NEIGHBORHOOD SEARCH 
+	original_train_errors_list_l1 = np.copy(train_errors_l1)
+	original_train_errors_list_l2 = np.copy(train_errors_l2)
+
+	for nbr in range(number_NS):
+		best_betas_l1, train_errors_list_l1 = randomized_NS(nbr, type_loss, 'l1', X_train, y_train, betas_l1, train_errors_l1, original_train_errors_list_l1, K0_list, N_alpha, alphas_l1, X_add, mu_max, epsilon, f)
+		best_betas_l2, train_errors_list_l2 = randomized_NS(nbr, type_loss, 'l2', X_train, y_train, betas_l2, train_errors_l2, original_train_errors_list_l2, K0_list, N_alpha, alphas_l2, X_add, mu_max, epsilon, f)
+
+		if nbr%2 == 0:
+			betas = [best_betas_l1, best_betas_l2, betas_l1_SVM, betas_l2_SVM]
+
+			# For later MIO
+			argmin_params_list = []
+			argmin_betas_list  = []
+
+			for name_metric_validation in ['l2_estimation', 'misclassification']:
+				argmin_betas, argmin_params, best_k_plot, all_k_plot = validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric_validation, K0_list, N_alpha, alphas)
+
+				compare_best_k(best_k_plot, name_metric_validation)
+				plt.savefig(pathname+'/'+name_metric_validation+'/best_k_heuristic.pdf')
+
+				compare_all_k(all_k_plot, K0_list, name_metric_validation)
+				plt.savefig(pathname+'/'+name_metric_validation+'/all_k_heuristic.pdf')
+
+				l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation, name_end='_NS_'+str(nbr))
+				metrics.append([l2_estimation, misclassification, sparsity, true_positive])
+				np.save(pathname+'/'+name_metric_validation+'/metrics', [l2_estimation, misclassification, sparsity, true_positive])
+
+
+				#For later MIO
+				argmin_params_list.append(argmin_params)
+				argmin_betas_list.append( argmin_betas)
+	
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#---Run MIO for top guys
+	aux_val = -1
+	for name_metric_validation in ['l2_estimation', 'misclassification']:
+		aux_val += 1
+
+		for idx in range(2): 
+			beta, beta0, objval = Gurobi_SVM(type_loss, 'l1', 'L0', X_train, y_train, argmin_params_list[aux_val][idx][1], K=argmin_params_list[aux_val][idx][0], beta_start=argmin_betas_list[aux_val][idx][0], OutputFlag=True)
+			argmin_betas_list[aux_val][idx] = (beta, beta0)
+
+		l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation, name_end='_MIO')
+		metrics.append([l2_estimation, misclassification, sparsity, true_positive])
+		np.save(pathname+'/'+name_metric_validation+'/metrics', [l2_estimation, misclassification, sparsity, true_positive])
+
 
 	plt.close('all')
 	f.close()
@@ -150,15 +212,15 @@ def average_simulations_compare_methods_classification(type_loss, N, P, k0, rho,
 
 
 
+
 def average_simulations_compare_methods_classification_with_SNR(type_loss, N, P, k0, rho, type_Sigma, n_average):
-
-
+	
 	DT = datetime.datetime.now()
 	pathname = str(DT.year)+'_'+str(DT.month)+'_'+str(DT.day)+'-'+str(DT.hour)+'h'+str(DT.minute)+'-N'+str(N)+'_P'+str(P)+'_k0'+str(k0)+'_rho'+str(rho)+'_Sigma'+str(type_Sigma)+'_'+type_loss
 	pathname = r'../../synthetic_datasets_results/'+type_loss+'/'+str(pathname)
 
 	all_metric_averaged = []
-	SNR_list            = [0.5, 1, 2, 5, 10, 20, 50]
+	SNR_list            = [0.5, 1, 2, 5, 10]
 
 	N_metrics  = 4
 	N_oponents = {0:4, 1:4, 2:3, 3:3}
@@ -177,12 +239,6 @@ def average_simulations_compare_methods_classification_with_SNR(type_loss, N, P,
 
 	for i in range(N_metrics):
 		metric_averaged = [[[all_metric_averaged[a][b][i][c] for b in range(n_average)] for a in range(len(SNR_list))] for c in range(N_oponents[i])] 
-
-		#print '\n'
-		#print name_metrics[i]
-		#print [[all_metric_averaged[a][0][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
-		#print [[all_metric_averaged[a][1][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
-		#print [[all_metric_averaged[a][2][c][3] for c in range(n_average)] for a in range(len(SNR_list))] 
 
 		plots_errorbar_SNR(SNR_list, metric_averaged, legends, name_metrics[i])
 		plt.savefig(pathname+'/'+name_metrics[i]+'.pdf', bbox_inches='tight')

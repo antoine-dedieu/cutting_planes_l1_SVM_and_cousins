@@ -3,7 +3,7 @@ import math
 from aux_algorithm1_classification import *
 
 
-def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, start, X_add, epsilon, highest_eig=0, tau=0.2, n_iter=500):
+def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, beta_start, X_add, epsilon, highest_eig=0, tau=0.2, n_iter=500):
     
 #TYPE LOSS        : one of the parameters squared_hinge', 'hinge', 'logreg'
 #TYPE PENALIZATION: one of the parameters l1', 'l2'
@@ -18,11 +18,7 @@ def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, sta
 
 #---Beta
     old_beta = -np.ones(P+1)
-    
-    if len(start) == 0:
-        beta = np.zeros(P+1)
-    else:
-        beta = np.concatenate( [start[0], np.array([start[1]]) ] ) #form of start
+    beta     = np.zeros(P+1) if len(beta_start) == 0 else np.concatenate( [beta_start[0], np.array([beta_start[1]]) ] ) #form of start
 
 
 #---Lipschitz constant
@@ -84,20 +80,21 @@ def algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, sta
 
 
 
-def loop_smoothing_hinge_loss(type_penalization, X, y, K0, alpha, start, X_add, epsilon, highest_eig=0, tau_max=0.2, n_loop=20, n_iter=500):
+def loop_tau_algorithm1_with_hinge(type_penalization, X, y, K0, alpha, beta_start, X_add, epsilon, highest_eig=0, tau_max=0.2, n_loop=20, n_iter=500):
     
-#N_LOOP: how many times should we run the loop
-#START : of the form (beta, beta0)
+#N_LOOP     : how many times should we run the loop
+#BETA_START : of the form (beta, beta0)
     
     N, P = X.shape
     tau  = tau_max
     
-    old_beta        = -np.ones(P)
-    beta_smoothing  = start[0] 
-    beta_0          = start[1] 
+#---Not intercept in CV
+    old_beta       = -np.ones(P)
+    beta_smoothing = np.zeros(P) if beta_start[0].shape[0] == 0 else beta_start[0][:P]
+    beta_0         = beta_start[1]
 
     test = 0
-    while np.linalg.norm(beta_smoothing - old_beta) > 1e-4 and test < n_loop: 
+    while np.linalg.norm(beta_smoothing - old_beta) > 1e-2 and test < n_loop: 
         test    += 1
         old_beta = beta_smoothing
         
@@ -110,12 +107,12 @@ def loop_smoothing_hinge_loss(type_penalization, X, y, K0, alpha, start, X_add, 
 
 
 
-def algorithm1_unified(type_loss, type_penalization, X, y, K0, alpha, start, X_add, epsilon, highest_eig=0, n_iter=500):
+def algorithm1_unified(type_loss, type_penalization, X, y, K0, alpha, beta_start, X_add, epsilon, highest_eig=0, n_iter=500):
 
     if type_loss == 'hinge':
-        return loop_smoothing_hinge_loss(type_penalization, X, y, K0, alpha, start, X_add, epsilon, highest_eig=highest_eig, n_iter=n_iter)
+        return loop_tau_algorithm1_with_hinge(type_penalization, X, y, K0, alpha, beta_start, X_add, epsilon, highest_eig=highest_eig, n_iter=n_iter)
     elif type_loss == 'squared_hinge' or type_loss == 'logreg':
-        return algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, start, X_add, epsilon, highest_eig=highest_eig, n_iter=n_iter)
+        return algorithm1_classification(type_loss, type_penalization, X, y, K0, alpha, beta_start, X_add, epsilon, highest_eig=highest_eig, n_iter=n_iter)
 
 
 

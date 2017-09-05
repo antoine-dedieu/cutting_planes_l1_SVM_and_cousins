@@ -3,6 +3,7 @@ import random
 from sklearn.utils import shuffle
 
 import os
+import pandas as pd
 
 
 
@@ -31,6 +32,11 @@ def process_data_real_datasets(type_real_dataset):
         dict_type = {'ALL\r\r\n':-1,'AML\r\r\n':1}
 
 
+    elif(type_real_dataset==-1):
+        N_real, P_real = 4143, 54878
+        data = open('../../../datasets/datasets_unprocessed/farm-ads-vect',"r")
+
+
 #-------------------X--------------------
     X0, y = pd.DataFrame(), []
 
@@ -44,9 +50,9 @@ def process_data_real_datasets(type_real_dataset):
 
                 for aux in line[1:len(line)]:
                     data_line.append(float(aux))
-                X0=pd.concat([X0,pd.DataFrame(data_line).T])
+                X0=pd.concat([X0, pd.DataFrame(data_line).T])
 
-    else:
+    elif type_real_dataset==0:
         for line in g:
             line,data_line=line.split(",")[::-1],[]
             y.append(dict_type[str(line[0])])
@@ -56,43 +62,66 @@ def process_data_real_datasets(type_real_dataset):
             X0=pd.concat([X0,pd.DataFrame(data_line).T])
 
 
-    N,P = X0.shape
-    X0.index = range(N)
-    X0.columns = range(P)
-    X = X0.values
+    else:
+        X = np.zeros((N_real, P_real))
+        y = np.zeros(N_real)
+        aux = -1
+
+        for line in data:
+            aux += 1
+            line = line.split(" ")
+            y[aux] = line[0]
+
+            for j in range(1, len(line)):
+                couple = line[j].split(":")
+                
+                if couple[1][-2:]!='\n': #if line not ended
+                    X[aux, int(couple[0])] = float(couple[1])
+                else:
+                    X[aux, int(couple[0])] = float(couple[1][:-2])
+
+
+    if type_real_dataset > -1:             
+        X0.index = range(N)
+        X0.columns = range(P)
+        X = X0.values
+
+    N,P = X.shape
     
-    print N, P
+    print 'Shape: '+str((N, P))
 
     for i in range(P):
         X[:,i] -= np.mean(X[:,i])
-        #X[:,i] /= np.linalg.norm(X[:,i])
+        X[:,i] /= np.linalg.norm(X[:,i] + 1e-10)
 
 
-    dict_title = {0:'ovarian', 1:'lungCancer', 2:'leukemia'}
+    dict_title = {-1:'farm-ads', 0:'ovarian', 1:'lungCancer', 2:'leukemia'}
     np.savetxt('../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt', X)
     np.savetxt('../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt', y)
 
-    #np.savetxt('datasets_processed/'+str(dict_title[type_real_dataset])+'/y_train_'+str(size)+'.txt', y_train)
-    #np.savetxt('datasets_processed/'+str(dict_title[type_real_dataset])+'/y_test_'+str(size)+'.txt',  y_test)
 
 
 
-def split_real_dataset(type_real_dataset, f):
+
+
+def real_dataset_read_data(type_real_dataset):
 
     current_path = os.path.dirname(os.path.realpath(__file__))
 
-    dict_title = {0:'ovarian', 1:'lungCancer', 2:'leukemia'}
+    dict_title =  {-1:'farm-ads', 0:'ovarian', 1:'lungCancer', 2:'leukemia'}
     size = 0
 
     X   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/X.txt')
     y   = np.loadtxt(current_path+'/../../../datasets/datasets_processed/'+str(dict_title[type_real_dataset])+'/y.txt')
     N,P = X.shape
 
-    return X, y, 0
+    return X, y
 
 
 
-def split_real_dataset_bis(type_real_dataset, f):
+
+
+def split_real_dataset(type_real_dataset, f):
 
     current_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -204,7 +233,6 @@ def real_dataset_SVM_light_format(type_real_dataset):
 
 
 
-
 #---------STORE INTO GOOD FORMAT------------- 
 
     data_train = open(current_path+'/../../struct_svm_admm/data/'+str(dict_title[type_real_dataset])+'/data_train', 'w')
@@ -229,11 +257,7 @@ def real_dataset_SVM_light_format(type_real_dataset):
 #process_data_real_datasets(0)
 #process_data_real_datasets(1)
 #process_data_real_datasets(2)
-
-
-
-#real_dataset_SVM_light_format(1)
-#real_dataset_SVM_light_format(2)
+#process_data_real_datasets(-1)
 
 
 

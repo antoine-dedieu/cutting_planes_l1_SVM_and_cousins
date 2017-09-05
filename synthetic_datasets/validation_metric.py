@@ -2,13 +2,14 @@ import numpy as np
 
 
 
-def validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric, K0_list, N_alpha):
+def validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric, K0_list, N_alpha, alphas):
 
 # X_pop_val : non standardized
-# l2_X_train: for beats standardization
+# l2_X_train: for betas standardization
 
-
+	
 	argmin_betas   = [] #4 betas minimizing the metric
+	argmin_params  = [] #parameters associated for later MIO
 	best_k_plot    = [] #list of K0 associated to 4 best betas
 	all_k_plot     = []
 	
@@ -50,6 +51,8 @@ def validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_va
 		
 
 		argmin_betas.append(betas_aux[argmin_K0][argmin_list[argmin_K0]])
+		argmin_params.append([K0_list[argmin_K0], alphas[aux][argmin_list[argmin_K0]]])
+
 		best_k_plot.append(( errors[argmin_K0], metric_list[argmin_K0], argmin_K0))
 		all_k_plot.append(metric_list)
 
@@ -76,6 +79,6 @@ def validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_va
 		all_k_plot.append(metric_list)
 
 
-	return argmin_betas, best_k_plot, all_k_plot
+	return argmin_betas, argmin_params, best_k_plot, all_k_plot
 
 

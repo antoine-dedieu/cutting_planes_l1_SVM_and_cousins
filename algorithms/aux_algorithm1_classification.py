@@ -25,7 +25,7 @@ def estimator_on_support(type_loss, type_penalization, X, y, alpha, beta):
 			#---Gurobi without model or warm-start
 			time_limit = 30
 			#beta, beta_0, error, _ = Gurobi_SVM('hinge', 'l1', X, y, support, alpha, 0, beta)
-			beta_support, beta_0, error, _ = Gurobi_SVM('hinge', 'l1', X_support, y, range(len(support)), alpha, 0, [])
+			beta_support, beta_0, error = Gurobi_SVM('hinge', 'l1', 'no_L0', X_support, y, alpha)
 			beta          = np.zeros(P)
 			beta[support] = beta_support
 

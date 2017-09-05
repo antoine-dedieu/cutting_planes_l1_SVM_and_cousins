@@ -17,6 +17,6 @@ dict_rho_NP = [(0,50, 100),   (.2,50, 100),   (.5,50, 100),
 rho, N, P = dict_rho_NP[int(sys.argv[1])]
 
 
-n_average = 5
-average_simulations_compare_methods_classification_with_SNR('logreg', N, P, 7, rho, 4, n_average)
-#average_simulations_compare_methods_classification('logreg', 100, 10000, 7, 0.2, 10, 4, n_average)
+n_average = 3
+#average_simulations_compare_methods_classification_with_SNR('logreg', N, P, 7, rho, 4, n_average)
+average_simulations_compare_methods_classification('hinge', 10, 20, 7, 0.2, 10, 4, n_average)

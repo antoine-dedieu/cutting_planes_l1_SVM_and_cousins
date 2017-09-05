@@ -225,10 +225,10 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
 
 
     #--arguments
-    colors      = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'m'}
-    markers     = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.'}
-    linestyles  = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.'}
-    markersizes = {0:'15', 1:'15', 2:'10', 3:'8', 4:'15'}
+    colors      = {0:'r', 1:'g', 2:'b', 3:'#FFA500', 4:'m', 5:'r'}
+    markers     = {0:'.', 1:'+', 2:'*', 3:'D', 4:'.', 5:'.'}
+    linestyles  = {0:':', 1:'-', 2:'-.', 3:'--', 4:'-.', 5:':'}
+    markersizes = {0:'15', 1:'15', 2:'10', 3:'8', 4:'15', 5:'15'}
 
     max_y_list = []
     for i in range(n_to_plot):
@@ -263,10 +263,6 @@ def L1_SVM_plots_errorbar(type_Sigma, arg_list, k0, rho, tau_SNR, times_list, le
     ax1.set_xlim(left=0)
     
 
-
-    
-
-    
 
     legend = ax1.legend(loc=2)
     for label in legend.get_texts():

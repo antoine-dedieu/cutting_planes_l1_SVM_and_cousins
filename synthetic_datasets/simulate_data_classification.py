@@ -3,9 +3,6 @@ import random
 from scipy.stats import norm
 import math
 
-import sys
-sys.path.append('../algorithms')
-from heuristics_classification import *
 
 
 def shuffle(X, y):
@@ -24,11 +21,6 @@ def shuffle(X, y):
     y = np.array(y).reshape(N,)
 
     return X,y
-
-
-
-
-
 
 
 
@@ -298,4 +290,8 @@ def simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f):
 
     return X_train, X_test, l2_X_train, y_train, y_test, u_positive
 
+
+def write_and_print(text,f):
+    print text
+    f.write('\n'+text)
 

@@ -125,19 +125,17 @@ def L1_SVM_both_CG_CP(X_train, y_train, index_samples, index_columns, alpha, eps
     #-------REDUCED COSTS FOR VARIABLES
         #---Look for variables with negative reduced costs
             RC_aux           = np.array([y_train[index_samples[i]]*dual_slack_values[i] for i in range(N_CP)])
-            RC_array         = alpha*ones_P[len(columns_to_check)] - np.abs( np.dot(X_train[np.array(index_samples),:][:,np.array(columns_to_check)].T, RC_aux) )
-
+            X_reduced        = X_train[np.array(index_samples),:][:,np.array(columns_to_check)]
+            RC_array         = alpha*ones_P[len(columns_to_check)] - np.abs( np.dot(X_reduced.T, RC_aux) )
             violated_columns = np.array(columns_to_check)[RC_array < -epsilon_RC]
-
     
 
     #-------REDUCED COSTS FOR CONSTRAINTS
         #---Look for constraints with negative reduced costs
-            RC_aux           = np.dot(X_train[np.array(constraint_to_check), :][:, np.array(index_columns)], beta) + b0_value*ones_N[:N-N_CP]
-            RC_array         = ones_N[:N-N_CP] - y_train[np.array(constraint_to_check)]*RC_aux
-
+            X_reduced            = X_train[:, np.array(index_columns)][np.array(constraint_to_check), :]
+            RC_aux               = np.dot(X_reduced, beta) + b0_value*ones_N[:N-N_CP]
+            RC_array             = ones_N[:N-N_CP] - y_train[np.array(constraint_to_check)]*RC_aux
             violated_constraints = np.array(constraint_to_check)[RC_array > epsilon_RC]
-            
 
                  
     #-------ADD VARIABLES    
@@ -160,7 +158,7 @@ def L1_SVM_both_CG_CP(X_train, y_train, index_samples, index_columns, alpha, eps
                     betas_plus.append(model.getVarByName('beta_+_'+str(violated_column)))
                     betas_minus.append(model.getVarByName('beta_-_'+str(violated_column)))
 
-                #model.optimize()
+                write_and_print('Time adding columns = '+str(time.time()-start), f)
 
             
     #-------ADD CONSTRAINTS
@@ -185,9 +183,12 @@ def L1_SVM_both_CG_CP(X_train, y_train, index_samples, index_columns, alpha, eps
 
 
 #---Solution
-    beta_plus   = np.array([model.getVarByName('beta_+_'+str(idx)).X  for idx in index_columns])
-    beta_minus  = np.array([model.getVarByName('beta_-_'+str(idx)).X  for idx in index_columns])
-    beta    = np.round(np.array(beta_plus) - np.array(beta_minus),6)
+    try: 
+        beta_plus   = np.array([model.getVarByName('beta_+_'+str(idx)).X  for idx in index_columns])
+        beta_minus  = np.array([model.getVarByName('beta_-_'+str(idx)).X  for idx in index_columns])
+        beta    = np.round(np.array(beta_plus) - np.array(beta_minus),6)
+    except:
+        beta = np.zeros(len(index_columns))
     
     obj_val = model.ObjVal
 

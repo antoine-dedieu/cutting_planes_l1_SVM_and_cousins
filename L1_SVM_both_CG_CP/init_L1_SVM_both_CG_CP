@@ -1,0 +1,79 @@
+import numpy as np
+from gurobipy import *
+
+import sys
+sys.path.append('../L1_SVM_CG')
+from L1_SVM_CG import *
+
+sys.path.append('../algorithms')
+from smoothing_hinge_loss import *
+
+from sklearn.svm import LinearSVC
+import time
+
+
+
+
+def init_CP_sampling_smoothing(X_train, y_train, alpha, is_restricted, f):
+
+    N, P = X_train.shape
+    N0   = 10*P
+
+    start_time = time.time()
+
+    tau_max = 0.1
+    n_loop  = 20
+    n_iter  = 20
+
+
+    #RESULT
+    beta_averaged = np.zeros(P+1)
+
+    for k in range(N/N0):
+        write_and_print('\n\n\n###### SAMPLE NUMBER '+str(k), f)
+
+        subset = np.sort(random.sample(xrange(N),N0))
+        X_train_reduced = np.array([X_train[i,:] for i in subset])
+        y_train_reduced = np.array([y_train[i]   for i in subset])
+
+    #---Normalize
+        l2_X_train_reduced = []
+        for i in range(P):
+            l2 = np.linalg.norm(X_train_reduced[:,i])         
+            l2_X_train_reduced.append(l2)
+            X_train_reduced[:,i] = X_train_reduced[:,i]/l2
+
+
+        #alpha_sample_0 = alpha*N0/N
+        alpha_sample = 0.01*np.max(np.sum( np.abs(X_train_reduced), axis=0))  #roughly alpha*np.sqrt(N0/float(N))
+
+
+        if is_restricted:
+            n_loop  = 10
+            _, _, beta_sample = loop_smoothing_hinge_loss_samples_restricted('hinge', 'l1', X_train_reduced, y_train_reduced, alpha_sample, tau_max, n_loop, n_iter, f)
+        else:
+            _, _, _, beta_sample = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced, y_train_reduced, alpha_sample, tau_max, n_loop, n_iter, f)
+
+
+        for i in range(P): beta_sample[i] /= l2_X_train_reduced[i]
+
+        beta_averaged += np.array(beta_sample)
+
+
+
+#---Determine set of constraints
+    beta_averaged *= N0/float(N)
+    b0_averaged   = beta_averaged[-1]
+    beta_averaged = beta_averaged[:-1]
+    b0_averaged = 0
+    ones_N = np.ones(N)
+
+
+    constraints = 1.1*ones_N - y_train*( np.dot(X_train, beta_averaged) + b0_averaged*ones_N)
+    idx_samples_smoothing = np.arange(N)[constraints >= 0]
+    write_and_print('Len dual smoothing: '+str(idx_samples_smoothing.shape[0]), f)
+
+    time_smoothing = time.time()-start_time
+    write_and_print('Total time: '+str(round(time_smoothing,3)), f)
+    return list(idx_samples_smoothing), time_smoothing
+

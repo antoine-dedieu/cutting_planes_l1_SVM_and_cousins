@@ -5,7 +5,7 @@ sys.path.append('../graphics')
 from bars_metrics import *
 
 
-def plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric):
+def plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric, name_end=''):
 	
 #---Metrics
 	#L2 estimation
@@ -35,15 +35,15 @@ def plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l
 
 #---Plots
 	bars_metrics(l2_estimation, 'l2_estimation')
-	plt.savefig(pathname+'/'+name_metric+'/test_l2_estimation.pdf')
+	plt.savefig(pathname+'/'+name_metric+'/test_l2_estimation'+name_end+'.pdf')
 
 	bars_metrics(misclassification, 'misclassification')
-	plt.savefig(pathname+'/'+name_metric+'/test_misclassification.pdf')
+	plt.savefig(pathname+'/'+name_metric+'/test_misclassification'+name_end+'.pdf')
 
 	bars_metrics(sparsity, 'sparsity')
-	plt.savefig(pathname+'/'+name_metric+'/test_sparsity.pdf')
+	plt.savefig(pathname+'/'+name_metric+'/test_sparsity'+name_end+'.pdf')
 
 	bars_metrics(true_positive, 'true_positive')
-	plt.savefig(pathname+'/'+name_metric+'/test_true_positive.pdf')
+	plt.savefig(pathname+'/'+name_metric+'/test_true_positive'+name_end+'.pdf')
 
 	return l2_estimation, misclassification, sparsity[:3], true_positive[:3]

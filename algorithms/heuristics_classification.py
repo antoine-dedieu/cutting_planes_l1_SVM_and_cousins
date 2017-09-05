@@ -69,17 +69,18 @@ def heuristic(type_descent, type_loss, type_penalization, X, y, K0_list, N_alpha
 #---K0_max if we decrease K0
     if type_descent   == 'down':
         K0_max       = K0_list[::-1][0]
-        model_Gurobi = 0   #first model
-
+        write_and_print('K= '+str(K0_max),f)
 
     #---Compute for decreasing values
         for loop in range(N_alpha):
             alpha = alpha_list[loop]
 
             if type_loss=='hinge' and type_penalization=='l1' : #keep the model at every iteration hence we don't use estimator_on_support
-                beta, beta_0, error, model_Gurobi = Gurobi_SVM('hinge', 'l1', X, y, range(P), alpha, model_Gurobi, []) 
+                beta_start = [] if loop == 0 else beta
+                
+                beta, beta_0, error = Gurobi_SVM('hinge', 'l1', 'no_L0', X, y, alpha) 
             else: 
-                beta, beta_0, error               = estimator_on_support(type_loss, type_penalization, X, y, alpha, np.ones(P))
+                beta, beta_0, error = estimator_on_support(type_loss, type_penalization, X, y, alpha, np.ones(P))
                 
             betas_l1_l2_SVM.append((beta, beta_0))
             errors_l1_l2_SVM.append(error)
@@ -107,7 +108,6 @@ def heuristic(type_descent, type_loss, type_penalization, X, y, K0_list, N_alpha
                 
                 beta_1, beta0_1, train_error_1 = algorithm1_unified(type_loss, type_penalization, X, y, K0, alpha, np.copy(beta_list[K0][loop-1]),       X_add, epsilon, highest_eig=mu_max)
             	beta_2, beta0_2, train_error_2 = algorithm1_unified(type_loss, type_penalization, X, y, K0, alpha, np.copy(beta_list[K0+delta_k][loop]), X_add, epsilon, highest_eig=mu_max)
-                
 
 
                 if train_error_1 < train_error_2:

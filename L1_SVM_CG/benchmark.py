@@ -105,8 +105,8 @@ def check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, alpha, current_pa
 		time = float(t)
 
 
-	#for j in range(P):    
-	#	X_train[:,j] *= l2_X_train[j]
+	for j in range(P):    
+		X_train[:,j] *= l2_X_train[j]
 
 
 	supp_AL_CD       = []

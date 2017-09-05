@@ -7,7 +7,8 @@ from gurobipy import *
 
 from L1_SVM_both_CG_CP import *
 from L1_SVM_add_columns_delete_samples import *
-
+from init_L1_SVM_both_CG_CP import *
+ 
 sys.path.append('../synthetic_datasets')
 from simulate_data_classification import *
 
@@ -45,7 +46,7 @@ def compare_L1_SVM_both_CG_CP(type_Sigma, N_P_list, k0, rho, tau_SNR):
 
 #---PARAMETERS
 	epsilon_RC  = 1e-2
-	loop_repeat = 5
+	loop_repeat = 2
 
 	n_alpha_list = 1
 	time_limit   = 60 
@@ -84,85 +85,69 @@ def compare_L1_SVM_both_CG_CP(type_Sigma, N_P_list, k0, rho, tau_SNR):
 
 		#---Simulate data
 			seed_X = random.randint(0,1000)
-			X_train, X_test, l2_X_train, y_train, y_test, u_positive = simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f)
+
+			if False:
+				X_train, _, l2_X_train, y_train, _, _ = simulate_data_classification(type_Sigma, N, P, k0, rho, tau_SNR, seed_X, f)
+				np.save(r'../../../L1_SVM_both_CG_CP_results/X_train.npy',    X_train)
+				np.save(r'../../../L1_SVM_both_CG_CP_results/l2_X_train.npy', l2_X_train)
+				np.save(r'../../../L1_SVM_both_CG_CP_results/y_train.npy',    y_train)
+			else:
+				X_train    = np.load(r'../../../L1_SVM_both_CG_CP_results/X_train.npy')
+				l2_X_train = np.load(r'../../../L1_SVM_both_CG_CP_results/l2_X_train.npy')
+				y_train    = np.load(r'../../../L1_SVM_both_CG_CP_results/y_train.npy')
+				print 'DATA LOADED'
+
+
+
+
+
+
+
+
 
 			alpha_max    = np.max(np.sum( np.abs(X_train), axis=0))                 #infinite norm of the sum over the lines
 			alpha_list   = [alpha_max*1e-3] #start with non empty support
-			#alpha_list   = [alpha_max*0.1*0.7**i for i in np.arange(1, n_alpha_list+1)] 
-
 			aux_alpha = -1
 
 
 			n_features = 50
-			index_SVM_CG_correl, time_correl   = init_correlation(X_train, y_train, n_features, f) #just for highest alpha
-			index_SVM_CG_liblinear, time_liblinear, beta_liblinear = liblinear_for_CG('squared_hinge_l1', X_train, y_train, alpha_list[0], f)
+			#index_SVM_CG_correl, time_correl   = init_correlation(X_train, y_train, n_features, f) #just for highest alpha
+			#index_SVM_CG_liblinear, time_liblinear, beta_liblinear = liblinear_for_CG('squared_hinge_l1', X_train, y_train, alpha_list[0], f)
 
 
 
 		#---METHOD 2: CORRELATION ON TOP 10N
-			#scaling = 200000./(N*N)
-
+			start_time = time.time()
 			argsort_columns = np.argsort(np.abs(np.dot(X_train.T, y_train) ))
-			index_CG        = argsort_columns[::-1][:10*N]
-			X_train_reduced = np.array([X_train[:,j] for j in index_CG]).T
-			write_and_print('\n\n###### Zizi'+str(X_train_reduced.shape)+' #####', f)
+			time_correl = time.time() - start_time
 
-			#tau_max = 5*scaling
+			N_columns = 10000
+			index_CG        = argsort_columns[::-1][:N_columns]
+			X_train_reduced = np.array([X_train[:,j] for j in index_CG]).T
+			
 			tau_max = 0.2
 			n_loop  = 1
 			n_iter  = 200
 
 			write_and_print('\n\n###### Method 2: tau='+str(tau_max)+' #####', f)
-			index_samples_method_2, index_columns_method_2_bis, time_smoothing_2, beta_method_2 = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced, y_train, alpha_list[0], tau_max, n_loop, time_limit, n_iter, f)
-			index_columns_method_2 = np.array(index_CG)[index_columns_method_2_bis].tolist()
+			#index_samples_method_2, index_columns_method_2_bis, time_smoothing_2, beta_method_2 = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced, y_train, alpha_list[0], tau_max, n_loop, n_iter, f)
+			#index_columns_method_2 = np.array(index_CG)[index_columns_method_2_bis].tolist()
 			
 
 		#---METHOD 3
-			X_train_reduced_features = np.array([X_train[:,j] for j in index_columns_method_2]).T
+			#X_train_reduced_features = np.array([X_train[:,j] for j in index_columns_method_2]).T
 
 			tau_max = 0.1
-			n_loop  = 20
-			n_iter  = 20
+			n_loop  = 10
+			n_iter  = 30
 
-			index_samples_method_3, index_columns_method_3_bis, time_smoothing_3_bis, beta_method_3_bis   = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced_features, y_train, alpha_list[0], tau_max, n_loop, time_limit, n_iter, f)
-			index_columns_method_3 = np.array(index_columns_method_2)[index_columns_method_3_bis].tolist()
-
-
-		#---METHOD 4
-
-		#---Step 1: improve correlation
-
-			#tau_max = 1*scaling
-			#n_loop  = 1
-			#n_iter  = 5
+			#index_samples_method_3, index_columns_method_3_bis, time_smoothing_3_bis, beta_method_3_bis   = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced_features, y_train, alpha_list[0], tau_max, n_loop, n_iter, f)
+			#index_columns_method_3 = np.array(index_columns_method_2)[index_columns_method_3_bis].tolist()
 
 
-			#_, _, time_smoothing_4, beta_method_4 = loop_smoothing_hinge_loss('hinge', 'l1', X_train, y_train, alpha_list[0], tau_max, n_loop, time_limit, n_iter, f)
-			#argsort_columns 		= np.argsort(np.abs(beta_method_4))
-			#index_columns_method_4  = argsort_columns[::-1][:2000]
-			#X_train_reduced 		= np.array([X_train[:,j] for j in index_columns_method_4]).T
 
-
-		#---Step 2: find columns
-			
-			#tau_max = 1*scaling
-			#n_loop  = 1
-			#n_iter  = 50
-
-			#index_samples_method_4, index_columns_method_4, time_smoothing_4_bis, beta_method_4_bis = loop_smoothing_hinge_loss('hinge', 'l1', X_train, y_train, alpha_list[0], tau_max, n_loop, time_limit, n_iter, f)
-			#index_columns_method_4   = np.array(index_columns_method_4)[index_columns_method_4_bis].tolist()
-			#X_train_reduced_features = np.array([X_train[:,j] for j in index_columns_method_4]).T
-			
-
-		#---Step 3: find rows
-
-			#tau_max = 1*scaling
-			#n_loop  = 10
-			#n_iter  = 20
-
-			#index_samples_method_4, index_columns_method_4_bis, time_smoothing_4_ter, beta_method_4_bis = loop_smoothing_hinge_loss('hinge', 'l1', X_train_reduced_features, y_train, alpha_list[0], tau_max, n_loop, time_limit, n_iter, f)
-			#index_columns_method_4 = np.array(index_columns_method_4)[index_columns_method_4_bis].tolist()
-
+		#---NEW METHOD 4
+			index_samples_method_4, index_columns_method_4, time_smoothing_4 = init_both_CG_CP_sampling_smoothing(X_train, y_train, alpha_list[0], f)
 
 
 
@@ -191,63 +176,68 @@ def compare_L1_SVM_both_CG_CP(type_Sigma, N_P_list, k0, rho, tau_SNR):
 
 
 			#---Compute path
-				write_and_print('\n###### L1 SVM path with CG correl 10 #####', f)
-				alpha_bis = alpha_max
-				index_columns_method_1, _   = init_correlation(X_train, y_train, 10, f)
-				beta_method_1     = []
-				time_method_1_tot = 0
+				#write_and_print('\n###### L1 SVM path with CG correl 10 #####', f)
+				#alpha_bis = alpha_max
+				#index_columns_method_1, _   = init_correlation(X_train, y_train, 10, f)
+				#beta_method_1     = []
+				#time_method_1_tot = 0
 
-				while 0.7*alpha_bis > alpha_list[0]:
-					beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_bis, 1e-2, time_limit, model_method_1, beta_method_1, False, f)
-					alpha_bis   *= 0.7
-					time_method_1_tot += time_method_1
-				beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 1e-2, time_limit, model_method_1, beta_method_1, False, f)
-				time_method_1_tot += time_method_1
+				#while 0.7*alpha_bis > alpha_list[0]:
+				#	beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_bis, 1e-2, time_limit, model_method_1, beta_method_1, False, f)
+				#	alpha_bis   *= 0.7
+				#	time_method_1_tot += time_method_1
+				#beta_method_1, support_method_1, time_method_1, model_method_1, index_columns_method_1, obj_val_method_1   = L1_SVM_CG(X_train, y_train, index_columns_method_1, alpha_list[0], 1e-2, time_limit, model_method_1, beta_method_1, False, f)
+				#time_method_1_tot += time_method_1
 
-				times_SVM_CG_method_1[aux][aux_alpha].append(time_method_1_tot)
-				write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)   
-
-
-
-			#---L1 SVM with CG 
-				#write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 1k, tau=1, T_max = 100 #####', f)
-				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 10N, tau=1, T_max = 100 #####', f)
-				#beta_method_2, support_method_2, time_method_2, model_method_2, index_columns_method_2, obj_val_method_2 = L1_SVM_CG(X_train, y_train, index_columns_method_2, alpha, 1e-1, time_limit, model_method_2, [], False, f)
-				beta_method_2, support_method_2, time_method_2, model_method_2, index_columns_method_2, obj_val_method_2 = L1_SVM_CG(X_train, y_train, index_columns_method_2, alpha, 1e-2, time_limit, model_method_2, [], False, f)
-				times_SVM_CG_method_2[aux][aux_alpha].append((time_correl + time_smoothing_2 + time_method_2))
+				#times_SVM_CG_method_1[aux][aux_alpha].append(time_method_1_tot)
+				#write_and_print('\nTIME ALL CG = '+str(time_method_1_tot), f)   
 
 
 			#---L1 SVM with CG 
 				#write_and_print('\n\n###### L1 SVM with CG-CP hinge AGD, method 2 + decrease tau 10*20  #####', f)
-				write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 10N, tau=1, T_max = 100 + decrease tau 10*20 #####', f)
-				beta_method_3, support_method_3, time_method_3, model_method_3, index_samples_method_3, index_columns_method_3, obj_val_method_3 = L1_SVM_both_CG_CP(X_train, y_train, index_samples_method_3, index_columns_method_3, alpha, 1e-2, time_limit, model_method_3, [], False, f)
-				times_SVM_CG_method_3[aux][aux_alpha].append((time_correl + time_smoothing_2 + time_smoothing_3_bis + time_method_3))
+				write_and_print('\n\n###### L1 SVM with sampling approach #####', f)
+				beta_method_4, support_method_4, time_method_4, model_method_4, index_samples_method_4, index_columns_method_4, obj_val_method_4 = L1_SVM_both_CG_CP(X_train, y_train, index_samples_method_4, index_columns_method_4, alpha, 1e-2, time_limit, model_method_4, [], False, f)
+				times_SVM_CG_method_1[aux][aux_alpha].append((time_smoothing_4 + time_method_4))
+				times_SVM_CG_method_3[aux][aux_alpha].append((time_smoothing_4 + time_method_4))
 
 
-			#---L1 SVM with CG and not deleting
-				#write_and_print('\n\n###### L1 SVM with CG-CP hinge AGD, method 2  #####', f)
-				#write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 10k, tau=1, T_max = 100 + decrease tau 10*20 #####', f)
-				#beta_method_4, support_method_4, time_method_4, model_method_4, index_samples_method_4, index_columns_method_4, obj_val_method_4 = L1_SVM_both_CG_CP(X_train, y_train, index_samples_method_4, index_columns_method_4, alpha, 1e-2, time_limit, model_method_4, [], False, f)
-				#times_SVM_CG_method_4[aux][aux_alpha].append(( time_correl + time_smoothing_4 + time_smoothing_4_bis + time_method_4))
-				#objvals_SVM_method_4[aux][aux_alpha].append(obj_val_method_4/float(obj_val_L1_SVM))
+				if N < 100:
+				#---L1 SVM with CG 
+					#write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 1k, tau=1, T_max = 100 #####', f)
+					write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 10N, tau=1, T_max = 100 #####', f)
+
+					beta_method_2, support_method_2, time_method_2, model_method_2, index_columns_method_2, obj_val_method_2 = L1_SVM_CG(X_train, y_train, index_columns_method_2, alpha, 1e-1, time_limit, model_method_2, [], False, f)
+					times_SVM_CG_method_2[aux][aux_alpha].append((time_correl + time_smoothing_2 + time_method_2))
 
 
-			#---BENCHMARK
-				write_and_print('\n\n###### Benchmark AL_CD #####', f)
-				store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, 1e-2*alpha_max, 'double')
-				subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', '-d', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train_double'])
-				obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, 1e-2*alpha_max, os.path.dirname(os.path.realpath(__file__)), f)
-				times_benchmark[aux][aux_alpha].append(time_AL_CD)
+				#---L1 SVM with CG 
+					#write_and_print('\n\n###### L1 SVM with CG-CP hinge AGD, method 2 + decrease tau 10*20  #####', f)
+					write_and_print('\n\n###### L1 SVM with CG hinge AGD, correl 10N, tau=1, T_max = 100 + decrease tau 10*20 #####', f)
+					beta_method_3, support_method_3, time_method_3, model_method_3, index_samples_method_3, index_columns_method_3, obj_val_method_3 = L1_SVM_both_CG_CP(X_train, y_train, index_samples_method_3, index_columns_method_3, alpha, 1e-2, time_limit, model_method_3, [], False, f)
+					times_SVM_CG_method_1[aux][aux_alpha].append((time_correl + time_smoothing_2 + time_smoothing_3_bis + time_method_3))
+					times_SVM_CG_method_3[aux][aux_alpha].append((time_correl + time_smoothing_2 + time_smoothing_3_bis + time_method_3))
 
 
 
-			#---RELATIVE ACCURACY
-				obj_val_L1_SVM = np.min([obj_val_method_1, obj_val_method_2, obj_val_method_3, obj_val_AL_CD])
 
-				objvals_SVM_method_1[aux][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM) -1.)
-				objvals_SVM_method_2[aux][aux_alpha].append(obj_val_method_2/float(obj_val_L1_SVM) -1.)
-				objvals_SVM_method_3[aux][aux_alpha].append(obj_val_method_3/float(obj_val_L1_SVM) -1.)
-				objvals_benchmark[aux][aux_alpha].append(obj_val_AL_CD/float(obj_val_L1_SVM) -1.)
+				#---BENCHMARK
+					write_and_print('\n\n###### Benchmark AL_CD #####', f)
+					#store_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, seed_X, 1e-2*alpha_max, 'double')
+					#subprocess.call([pathname+'/../../best_subset_classification/LPsparse/LPsparse', '-d', pathname+'/../../best_subset_classification/LPsparse/data/synthetic_dataset/data_train_double'])
+					#obj_val_AL_CD, time_AL_CD = check_AL_CD_comparison(X_train, y_train, l2_X_train, N, P, 1e-2*alpha_max, os.path.dirname(os.path.realpath(__file__)), f)
+					obj_val_AL_CD, time_AL_CD = 1,1
+					times_benchmark[aux][aux_alpha].append(time_AL_CD)
+
+
+
+				#---RELATIVE ACCURACY
+					obj_val_method_1 = obj_val_method_2
+					obj_val_L1_SVM = np.min([obj_val_method_1, obj_val_method_2, obj_val_method_3, obj_val_AL_CD]) + 1e-5
+
+					objvals_SVM_method_1[aux][aux_alpha].append(obj_val_method_1/float(obj_val_L1_SVM) -1.)
+					objvals_SVM_method_2[aux][aux_alpha].append(obj_val_method_2/float(obj_val_L1_SVM) -1.)
+					objvals_SVM_method_3[aux][aux_alpha].append(obj_val_method_3/float(obj_val_L1_SVM) -1.)
+					objvals_benchmark[aux][aux_alpha].append(obj_val_AL_CD/float(obj_val_L1_SVM) -1.)
 				
 
 
