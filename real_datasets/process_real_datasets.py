@@ -104,18 +104,7 @@ def process_real_datasets(name_real_dataset):
                 X0=pd.concat([X0, pd.DataFrame(data_line).T])
 
 
-    if name_real_dataset == 'farm-ads'
-        for line in g:
-            line,data_line=line.split(",")[::-1],[]
-            y.append(dict_type[str(line[0])])
-            
-            for aux in line[1:len(line)]:
-                data_line.append(float(aux))
-            X0=pd.concat([X0,pd.DataFrame(data_line).T])
-
-
-
-    elif name_real_dataset == 'ovarian'
+    if name_real_dataset == 
         X = np.zeros((N_real, P_real))
         y = np.zeros(N_real)
         aux = -1
@@ -134,9 +123,19 @@ def process_real_datasets(name_real_dataset):
                     X[aux, int(couple[0])] = float(couple[1][:-2])
 
 
+
+    elif name_real_dataset == 'ovarian'
+        for line in g:
+            line,data_line=line.split(",")[::-1],[]
+            y.append(dict_type[str(line[0])])
+            
+            for aux in line[1:len(line)]:
+                data_line.append(float(aux))
+            X0=pd.concat([X0,pd.DataFrame(data_line).T])
+
 #-------------UCI--------------------------
 	
-	elif name_real_dataset in ['dexter', 'gisette', 'madelon', 'arcene']:
+	elif name_real_dataset in ['dexter', 'gisette', 'madelon', 'arcene', 'farm-ads']:
 	    X = np.zeros((N_real, P_real))
 	    y = np.zeros(N_real)
 
@@ -178,7 +177,8 @@ def process_real_datasets(name_real_dataset):
 
 
 
-#-------------UCI--------------------------
+#----------------STANDARDIZE--------------------------
+    
     N,P = X.shape
     print 'Shape: '+str((N, P))
 

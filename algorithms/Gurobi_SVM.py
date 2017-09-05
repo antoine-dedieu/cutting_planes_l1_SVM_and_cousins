@@ -8,7 +8,7 @@ import sys
 
 
 
-def Gurobi_SVM(type_loss, type_penalization, is_L0, X, y, alpha, K=0, beta_start=[], time_limit=60, Big_M=0, OutputFlag=False):
+def Gurobi_SVM(type_loss, type_penalization, is_L0, X, y, alpha, K=0, beta_start=[], time_limit=180, Big_M=0, OutputFlag=False):
 
     N,P  = X.shape
     

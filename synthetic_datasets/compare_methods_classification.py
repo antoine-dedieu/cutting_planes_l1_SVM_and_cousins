@@ -34,10 +34,10 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 
 
 	#Computation parameters
-	K0_list   = range(5)
+	K0_list   = range(15)
 	epsilon   = 1e-3
-	N_alpha   = 10 if type_loss=='logreg' else 5#10-4
-	number_NS = 1
+	N_alpha   = 100 if type_loss=='logreg' else 50#10-4
+	number_NS = 5
 
 
 
@@ -147,15 +147,14 @@ def compare_methods_classification(type_loss, N, P, k0, rho, d_mu, type_Sigma, p
 				argmin_betas, argmin_params, best_k_plot, all_k_plot = validation_metric(betas, train_errors, X_pop_val, y_pop_val, beta_min_pop_val, l2_X_train, name_metric_validation, K0_list, N_alpha, alphas)
 
 				compare_best_k(best_k_plot, name_metric_validation)
-				plt.savefig(pathname+'/'+name_metric_validation+'/best_k_heuristic.pdf')
+				plt.savefig(pathname+'/'+name_metric_validation+'/best_k_NS_'+str(nbr)+'.pdf')
 
 				compare_all_k(all_k_plot, K0_list, name_metric_validation)
-				plt.savefig(pathname+'/'+name_metric_validation+'/all_k_heuristic.pdf')
+				plt.savefig(pathname+'/'+name_metric_validation+'/all_k_NS_'+str(nbr)+'.pdf')
 
 				l2_estimation, misclassification, sparsity, true_positive = plot_test_metrics(argmin_betas, X_pop_test, y_pop_test, beta_min_pop_test, l2_X_train, u_positive, pathname, name_metric_validation, name_end='_NS_'+str(nbr))
 				metrics.append([l2_estimation, misclassification, sparsity, true_positive])
 				np.save(pathname+'/'+name_metric_validation+'/metrics', [l2_estimation, misclassification, sparsity, true_positive])
-
 
 				#For later MIO
 				argmin_params_list.append(argmin_params)
@@ -228,7 +227,22 @@ def average_simulations_compare_methods_classification_with_SNR(type_loss, N, P,
 	for SNR in SNR_list:
 		pathname_bis = pathname+'/dmu'+str(SNR)
 		metrics_to_average_SNR = [compare_methods_classification(type_loss, N, P, k0, rho, SNR, type_Sigma, pathname_bis) for i in range(n_average)]
+
+#-------PLOTS and AVERAGE for SNR
+		if n_average>1:
+			for aux_val in range(2):
+				name_metric_validation = ['l2_estimation_averaged', 'misclassification_averaged'][aux_val]
+				os.makedirs(pathname_bis+'/'+name_metric_validation)
+
+				for aux_metric in range(4):
+					name_metric     = ['l2_estimation', 'misclassification', 'sparsity', 'true_positive'][aux_metric]
+					metric_averaged = np.array([ metrics_to_average_SNR[i][aux_val][aux_metric] for i in range(n_average) ]) 
+
+					boxplot_averaged_metrics(metric_averaged,  name_metric)
+					plt.savefig(pathname_bis+'/'+name_metric_validation+'/'+name_metric+'.pdf')
 		
+
+#-------AGGREGATION for MISCLASSIFICATION
 		aux_val = 1
 		metric_averaged_SNR    = np.array([[ metrics_to_average_SNR[simu][aux_val][aux_metric] for aux_metric in range(N_metrics) ] for simu in range(n_average)]) #no more aux_val
 		all_metric_averaged.append(metric_averaged_SNR)
