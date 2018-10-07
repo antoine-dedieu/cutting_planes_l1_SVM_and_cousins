@@ -1,5 +1,2 @@
-real_datasets/datasets_processed/dexter/X_train.txt
-real_datasets/datasets_processed/dexter/y_train.txt
-
-real_datasets/datasets_processed/gisette/X_train.txt
-real_datasets/datasets_processed/gisette/y_train.txt
+*.pyc
+.DS_Store
