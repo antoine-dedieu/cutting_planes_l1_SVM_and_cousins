@@ -32,11 +32,11 @@ We note n,p the shape of X. For each problem, our method uses First Order Method
 ## Examples
 
 The code in '/example' simulates experiments and compares our best method to a LP solver  -and to our Regularization Path algorithms when p is large- for the following problems:
-1/ L1-SVM with n<<p
-2/ L1-SVM with p<<n
-3/ L1-SVM with n and p large
-4/ Group-SVM with n<<p
-5/ Slope-SVM with n<<p.
+ - 1/ L1-SVM with n<<p
+ - 2/ L1-SVM with p<<n
+ - 3/ L1-SVM with n and p large
+ - 4/ Group-SVM with n<<p
+ - 5/ Slope-SVM with n<<p.
 
 
 
