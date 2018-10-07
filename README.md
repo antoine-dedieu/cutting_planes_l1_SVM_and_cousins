@@ -5,6 +5,7 @@ We use the following dependencies
 ```
 Python 2.7.15
 Gurobi 6.5.2
+cvxpy  1.0.8
 ```
 
 ## Problems solved
