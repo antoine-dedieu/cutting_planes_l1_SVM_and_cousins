@@ -11,15 +11,15 @@ Gurobi 6.5.2
 
 We consider a family of regularized linear Support Vectors Machines problem with hinge-loss and convex sparsity-inducing regularization. In particular we study the L1-SVM problem:
 ```
-min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0) + \lambda \| \beta \|_1,
+min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0)) + \lambda \| \beta \|_1,
 ```
 the group-SVM problem:
 ```
-min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0) + \lambda \sum_{g=1}^G \| \beta_g \|_\inf,
+min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0)) + \lambda \sum_{g=1}^G \| \beta_g \|_\inf,
 ```
 and the Slope-SVM problem:
 ```
-min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0) + \sum_{j=1}^p \lambda_j | \beta_(j) |.
+min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0)) + \sum_{j=1}^p \lambda_j | \beta_(j) |.
 ```
 
 ## Algorithms
@@ -27,7 +27,7 @@ min \sum_{i=1}^n max (0, 1 - y_i * (x_i^T \beta +\beta_0) + \sum_{j=1}^p \lambda
 We note n,p the shape of X. For each problem, our method uses First Order Methods to initialize a 
  - Column Generation algorithm when n<<p
  - Constraint Generation algorithm when p<<n
- - Column and Constraint Generation algorithm for both n and p are large
+ - Column and Constraint Generation algorithm for both n and p are large.
 
 ## Examples
 
